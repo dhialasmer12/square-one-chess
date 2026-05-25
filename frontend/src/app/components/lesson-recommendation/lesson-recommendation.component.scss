@@ -1,0 +1,12 @@
+.lesson-rec {
+  width: 100%;
+}
+
+.carousel-nav {
+  @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 text-lg text-zinc-200;
+  @apply hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-35;
+}
+
+.carousel-track {
+  scroll-behavior: smooth;
+}

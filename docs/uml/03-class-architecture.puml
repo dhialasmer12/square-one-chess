@@ -1,0 +1,141 @@
+@startuml Square_One_Chess_Architecture
+title Diagramme de classes — Architecture applicative
+
+skinparam packageStyle rectangle
+
+package "Frontend (Angular 17)" {
+  class AppComponent
+  class AuthGuard
+  class GuestGuard
+  class AuthService
+  class GamePlayService
+  class MatchmakingService
+  class ChessBoardComponent
+  class LobbyPageComponent
+  class GamePageComponent
+}
+
+package "Backend (Express + TypeScript)" {
+  class ExpressApp {
+    +use(middleware)
+    +use('/api', routes)
+  }
+  class HttpServer
+  class SocketIOServer
+
+  package "Routes" {
+    class AuthRoutes
+    class GameRoutes
+    class StatsRoutes
+    class AiRoutes
+    class TournamentRoutes
+    class FriendsRoutes
+    class ChatRoutes
+    class PuzzleRoutes
+    class AnalyticsRoutes
+  }
+
+  package "Controllers" {
+    class AuthController
+    class GameController
+    class StatsController
+    class AiController
+    class TournamentController
+    class FriendController
+    class ChatController
+    class PuzzleController
+    class AnalyticsController
+  }
+
+  package "Services" {
+    class AuthService
+    class GameService
+    class StatsService
+    class AiService
+    class TournamentService
+    class FriendsService
+    class ChatService
+    class PuzzleService
+    class StockfishEngineService
+  }
+
+  package "Sockets" {
+    class GameSocketHandler
+    class SocialSocketHandler
+    class ActiveGamesStore
+  }
+
+  class PrismaClient
+  class VerifyTokenMiddleware
+  class ErrorMiddleware
+}
+
+package "External" {
+  class SQLiteDB
+  class ChessJs
+  class Stockfish
+}
+
+AppComponent --> AuthService
+AppComponent --> GamePlayService
+AppComponent --> MatchmakingService
+LobbyPageComponent --> MatchmakingService
+GamePageComponent --> GamePlayService
+GamePageComponent --> ChessBoardComponent
+AuthGuard ..> AuthService
+GuestGuard ..> AuthService
+
+AuthService --> AuthRoutes : HTTP
+GamePlayService --> GameRoutes : HTTP
+MatchmakingService --> SocketIOServer : WebSocket
+
+ExpressApp --> HttpServer
+HttpServer --> SocketIOServer
+ExpressApp --> AuthRoutes
+ExpressApp --> GameRoutes
+ExpressApp --> StatsRoutes
+ExpressApp --> AiRoutes
+ExpressApp --> TournamentRoutes
+ExpressApp --> FriendsRoutes
+ExpressApp --> ChatRoutes
+ExpressApp --> PuzzleRoutes
+ExpressApp --> AnalyticsRoutes
+
+AuthRoutes --> AuthController
+GameRoutes --> GameController
+StatsRoutes --> StatsController
+AiRoutes --> AiController
+TournamentRoutes --> TournamentController
+FriendsRoutes --> FriendController
+ChatRoutes --> ChatController
+PuzzleRoutes --> PuzzleController
+AnalyticsRoutes --> AnalyticsController
+
+AuthRoutes --> VerifyTokenMiddleware
+GameRoutes --> VerifyTokenMiddleware
+
+AuthController --> AuthService
+GameController --> GameService
+StatsController --> StatsService
+AiController --> AiService
+TournamentController --> TournamentService
+FriendController --> FriendsService
+ChatController --> ChatService
+PuzzleController --> PuzzleService
+AnalyticsController --> PrismaClient
+
+GameSocketHandler --> GameService
+GameSocketHandler --> ActiveGamesStore
+SocialSocketHandler --> ChatService
+SocialSocketHandler --> FriendsService
+
+GameService --> PrismaClient
+GameService --> ChessJs
+AuthService --> PrismaClient
+StatsService --> PrismaClient
+AiService --> ChessJs
+StockfishEngineService --> Stockfish
+
+PrismaClient --> SQLiteDB
+
+@enduml

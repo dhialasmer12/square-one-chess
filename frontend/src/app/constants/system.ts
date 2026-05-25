@@ -1,0 +1,3 @@
+export const OPEN_SEAT_USER_ID =
+  '00000000-0000-4000-a000-000000000001' as const;
+

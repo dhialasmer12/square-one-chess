@@ -1,0 +1,200 @@
+<div
+  class="min-h-screen bg-gradient-to-b from-zinc-950 via-board-frame to-zinc-950 text-zinc-100"
+>
+  <header
+    class="border-b border-zinc-800/80 bg-zinc-900/50 backdrop-blur-sm"
+  >
+    <div
+      class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4"
+    >
+      <div class="flex items-center gap-3">
+        <a
+          routerLink="/lobby"
+          class="text-sm text-zinc-400 hover:text-zinc-200"
+          >← Lobby</a
+        >
+        <span class="text-board-light">♔</span>
+        <h1 class="font-display text-lg font-semibold text-board-light">
+          Leaderboard
+        </h1>
+      </div>
+      <nav class="flex flex-wrap gap-2">
+        <a
+          routerLink="/profile"
+          class="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+          >Profile</a
+        >
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-8">
+    <div
+      class="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between"
+    >
+      <div class="flex flex-wrap items-center gap-2">
+        <label class="sr-only" for="lb-format">Rating</label>
+        <select
+          id="lb-format"
+          name="ratingFormat"
+          [ngModel]="ratingFormat"
+          (ngModelChange)="onRatingFormatChange($event)"
+          class="rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-200"
+        >
+          <option value="combined">Peak (combined)</option>
+          <option value="bullet">Bullet</option>
+          <option value="blitz">Blitz</option>
+          <option value="rapid">Rapid</option>
+        </select>
+        <button
+          type="button"
+          (click)="onPeriodChange('all')"
+          [ngClass]="{
+            'border-amber-500/50': period === 'all',
+            'bg-zinc-800': period === 'all',
+          }"
+          class="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800"
+        >
+          All time
+        </button>
+        <button
+          type="button"
+          (click)="onPeriodChange('month')"
+          [ngClass]="{
+            'border-amber-500/50': period === 'month',
+            'bg-zinc-800': period === 'month',
+          }"
+          class="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800"
+        >
+          Monthly
+        </button>
+        <button
+          type="button"
+          (click)="onPeriodChange('week')"
+          [ngClass]="{
+            'border-amber-500/50': period === 'week',
+            'bg-zinc-800': period === 'week',
+          }"
+          class="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800"
+        >
+          Weekly
+        </button>
+      </div>
+      <div class="flex flex-1 flex-wrap items-center gap-2 sm:max-w-md sm:flex-none">
+        <input
+          type="search"
+          [ngModel]="search"
+          (ngModelChange)="onSearchInput($event)"
+          placeholder="Search username…"
+          class="min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
+        />
+        <button
+          type="button"
+          (click)="refresh()"
+          [disabled]="loading"
+          class="rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-700 disabled:opacity-50"
+        >
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    @if (loadError) {
+      <p class="mb-4 text-red-400">{{ loadError }}</p>
+    }
+
+    <div
+      class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40 ring-1 ring-white/5"
+    >
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[720px] text-left text-sm">
+          <thead>
+            <tr class="border-b border-zinc-800 text-xs uppercase tracking-wide text-zinc-500">
+              <th class="px-4 py-3 font-medium">Rank</th>
+              <th class="px-4 py-3 font-medium">Username</th>
+              <th class="px-4 py-3 font-medium">ELO</th>
+              <th class="px-4 py-3 font-medium">Games</th>
+              <th class="px-4 py-3 font-medium">Win rate</th>
+              <th class="px-4 py-3 font-medium">Streak</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading) {
+              @for (i of [1, 2, 3, 4, 5]; track i) {
+                <tr class="border-b border-zinc-800/60">
+                  @for (j of [1, 2, 3, 4, 5, 6]; track j) {
+                    <td class="px-4 py-3">
+                      <div class="h-4 animate-pulse rounded bg-zinc-800"></div>
+                    </td>
+                  }
+                </tr>
+              }
+            } @else {
+              @for (row of pagedRows; track row.userId) {
+                <tr
+                  class="border-b border-zinc-800/60 transition hover:bg-zinc-800/50"
+                  [ngClass]="{
+                    'bg-amber-500/10': row.userId === currentUserId,
+                    'ring-1': row.userId === currentUserId,
+                    'ring-amber-500/30': row.userId === currentUserId,
+                  }"
+                >
+                  <td class="px-4 py-3 font-mono text-zinc-400">#{{ row.rank }}</td>
+                  <td class="px-4 py-3 font-medium text-zinc-100">
+                    {{ row.username }}
+                    @if (row.userId === currentUserId) {
+                      <span
+                        class="ml-2 rounded bg-amber-500/20 px-1.5 py-0.5 text-xs text-amber-200"
+                        >You</span
+                      >
+                    }
+                  </td>
+                  <td class="px-4 py-3 font-mono text-amber-200/90">{{ row.elo }}</td>
+                  <td class="px-4 py-3 text-zinc-400">{{ row.gamesPlayed }}</td>
+                  <td class="px-4 py-3 text-zinc-300">
+                    {{ winRateDisplay(row) }}
+                  </td>
+                  <td class="px-4 py-3 text-zinc-400">{{ row.winStreak }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="px-4 py-12 text-center text-zinc-500">
+                    No players match this filter.
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    @if (!loading && rows.length > pageSize) {
+      <div
+        class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-400"
+      >
+        <p>
+          Page {{ page }} of {{ totalPages }} · {{ rows.length }} players
+        </p>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            (click)="setPage(page - 1)"
+            [disabled]="page <= 1"
+            class="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 disabled:opacity-40"
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            (click)="setPage(page + 1)"
+            [disabled]="page >= totalPages"
+            class="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    }
+  </main>
+</div>

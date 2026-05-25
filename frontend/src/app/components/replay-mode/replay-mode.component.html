@@ -1,0 +1,177 @@
+<div class="replay-root text-zinc-100">
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h2 class="font-display text-lg font-semibold text-board-light">
+      {{ heading }}
+    </h2>
+    @if (loading) {
+      <span class="text-sm text-zinc-500">Loading moves…</span>
+    }
+  </div>
+
+  @if (loadError) {
+    <p
+      class="mb-4 rounded-lg border border-red-500/40 bg-red-950/30 px-3 py-2 text-sm text-red-200"
+    >
+      {{ loadError }}
+    </p>
+  }
+
+  <div class="replay-layout">
+    @if (showEvalBar) {
+      <div
+        class="eval-bar hidden shrink-0 sm:block"
+        aria-hidden="true"
+        title="Rough material balance (white ↑)"
+      >
+        <div class="eval-bar__track">
+          <div
+            class="eval-bar__white"
+            [style.height.%]="evalWhitePercent"
+          ></div>
+        </div>
+      </div>
+    }
+
+    <div class="board-wrap min-w-0">
+      <div class="mx-auto w-full max-w-[min(100%,520px)]">
+        <app-chess-board
+          [fen]="fen"
+          [orientation]="orientation"
+          [disabled]="true"
+          [loading]="loading"
+          [showLegalMoves]="false"
+          [showLastMove]="true"
+        />
+      </div>
+
+      <div
+        class="mt-4 flex flex-wrap items-center justify-center gap-2 border-t border-zinc-800 pt-4"
+      >
+        <button
+          type="button"
+          (click)="first()"
+          [disabled]="currentPly === 0 || loading"
+          class="ctl-btn"
+        >
+          |◀
+        </button>
+        <button
+          type="button"
+          (click)="prev()"
+          [disabled]="currentPly === 0 || loading"
+          class="ctl-btn"
+        >
+          ◀
+        </button>
+        <button
+          type="button"
+          (click)="toggleAuto()"
+          [disabled]="loading || moves.length === 0"
+          class="ctl-btn ctl-btn--accent"
+        >
+          @if (autoPlaying) {
+            Pause
+          } @else {
+            Play
+          }
+        </button>
+        <button
+          type="button"
+          (click)="next()"
+          [disabled]="currentPly >= moves.length || loading"
+          class="ctl-btn"
+        >
+          ▶
+        </button>
+        <button
+          type="button"
+          (click)="last()"
+          [disabled]="currentPly >= moves.length || loading"
+          class="ctl-btn"
+        >
+          ▶|
+        </button>
+      </div>
+
+      <div
+        class="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-zinc-500"
+      >
+        <span>Speed</span>
+        <button
+          type="button"
+          (click)="setSpeed(0.5)"
+          [ngClass]="{
+            'ring-1 ring-amber-500/40': speedMult === 0.5,
+          }"
+          class="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-zinc-300"
+        >
+          0.5×
+        </button>
+        <button
+          type="button"
+          (click)="setSpeed(1)"
+          [ngClass]="{
+            'ring-1 ring-amber-500/40': speedMult === 1,
+          }"
+          class="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-zinc-300"
+        >
+          1×
+        </button>
+        <button
+          type="button"
+          (click)="setSpeed(2)"
+          [ngClass]="{
+            'ring-1 ring-amber-500/40': speedMult === 2,
+          }"
+          class="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-zinc-300"
+        >
+          2×
+        </button>
+        <span class="ml-2 font-mono text-zinc-400"
+          >{{ currentPly }} / {{ moves.length }}</span
+        >
+      </div>
+    </div>
+
+    <aside class="moves-panel">
+      <div
+        class="border-b border-zinc-800 px-3 py-2 font-display text-sm font-semibold text-board-light"
+      >
+        Moves
+      </div>
+      <ol
+        class="max-h-[min(60vh,420px)] list-none space-y-0.5 overflow-y-auto p-2 text-sm"
+      >
+        @for (row of moveRows; track row.num) {
+          <li
+            class="grid grid-cols-[2rem_1fr_1fr] gap-1 rounded-md px-1 py-0.5 text-zinc-400 hover:bg-zinc-800/50"
+          >
+            <span class="text-zinc-600">{{ row.num }}.</span>
+            <button
+              type="button"
+              class="move-cell font-mono text-left"
+              [class.move-cell--on]="isActiveWhiteEnd(row.wi)"
+              (click)="jumpToHalfMoveIndex(row.wi)"
+            >
+              {{ row.white }}
+            </button>
+            @if (row.black) {
+              <button
+                type="button"
+                class="move-cell font-mono text-left"
+                [class.move-cell--on]="isActiveBlackEnd(row.bi)"
+                (click)="jumpToHalfMoveIndex(row.bi)"
+              >
+                {{ row.black }}
+              </button>
+            } @else {
+              <span></span>
+            }
+          </li>
+        } @empty {
+          <li class="px-2 py-6 text-center text-zinc-600">No moves.</li>
+        }
+      </ol>
+    </aside>
+  </div>
+</div>

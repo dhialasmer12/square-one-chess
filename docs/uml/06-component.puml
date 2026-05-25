@@ -1,0 +1,29 @@
+@startuml Square_One_Chess_Components
+title Diagramme de composants — Déploiement logique
+
+node "Navigateur" {
+  [SPA Angular 17\nTailwind + chess.js] as SPA
+}
+
+node "Serveur Node.js" {
+  [Express API\n/api/*] as API
+  [Socket.io] as WS
+  [Services métier] as SVC
+  [Prisma ORM] as ORM
+}
+
+database "SQLite" as DB
+
+cloud "Email (Nodemailer)" as MAIL
+cloud "Stockfish (optionnel)" as SF
+
+SPA --> API : HTTP REST\n(JSON + cookies)
+SPA --> WS : WebSocket\n(parties, queue, chat)
+API --> SVC
+WS --> SVC
+SVC --> ORM
+ORM --> DB
+SVC --> MAIL : vérification / reset MDP
+SVC --> SF : analyse moteur
+
+@enduml

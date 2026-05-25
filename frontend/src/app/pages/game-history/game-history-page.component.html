@@ -1,0 +1,231 @@
+<div
+  class="min-h-screen bg-gradient-to-b from-zinc-950 via-board-frame to-zinc-950 text-zinc-100"
+>
+  <header
+    class="border-b border-zinc-800/80 bg-zinc-900/50 backdrop-blur-sm"
+  >
+    <div
+      class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4"
+    >
+      <div class="flex items-center gap-3">
+        <a
+          routerLink="/lobby"
+          class="text-sm text-zinc-400 hover:text-zinc-200"
+          >← Lobby</a
+        >
+        <span class="text-board-light">♔</span>
+        <h1 class="font-display text-lg font-semibold text-board-light">
+          Game history
+        </h1>
+      </div>
+      <nav class="flex flex-wrap gap-2">
+        <a
+          routerLink="/profile"
+          class="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+          >Profile</a
+        >
+        <a
+          routerLink="/leaderboard"
+          class="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+          >Leaderboard</a
+        >
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-8">
+    @if (loadError) {
+      <p
+        class="mb-6 rounded-xl border border-red-500/40 bg-red-950/30 px-4 py-3 text-red-200"
+      >
+        {{ loadError }}
+      </p>
+    }
+
+    <div
+      class="mb-6 grid gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:grid-cols-2 lg:grid-cols-4"
+    >
+      <div>
+        <label class="mb-1 block text-xs font-medium text-zinc-500" for="gh-result"
+          >Result</label
+        >
+        <select
+          id="gh-result"
+          name="result"
+          [(ngModel)]="resultFilter"
+          (ngModelChange)="onFilterChange()"
+          class="gh-input"
+        >
+          <option value="all">All</option>
+          <option value="win">Win</option>
+          <option value="loss">Loss</option>
+          <option value="draw">Draw</option>
+        </select>
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-medium text-zinc-500" for="gh-sort"
+          >Sort by</label
+        >
+        <select
+          id="gh-sort"
+          name="sort"
+          [(ngModel)]="sort"
+          (ngModelChange)="onFilterChange()"
+          class="gh-input"
+        >
+          <option value="date_desc">Date (newest)</option>
+          <option value="date_asc">Date (oldest)</option>
+          <option value="opponent_elo_desc">Opponent ELO (high)</option>
+          <option value="opponent_elo_asc">Opponent ELO (low)</option>
+          <option value="game_length_desc">Game length (long)</option>
+          <option value="game_length_asc">Game length (short)</option>
+        </select>
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-medium text-zinc-500" for="gh-from"
+          >From</label
+        >
+        <input
+          id="gh-from"
+          type="date"
+          [(ngModel)]="dateFrom"
+          (change)="onFilterChange()"
+          class="gh-input"
+        />
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-medium text-zinc-500" for="gh-to"
+          >To</label
+        >
+        <input
+          id="gh-to"
+          type="date"
+          [(ngModel)]="dateTo"
+          (change)="onFilterChange()"
+          class="gh-input"
+        />
+      </div>
+      <div class="sm:col-span-2 lg:col-span-4">
+        <label class="mb-1 block text-xs font-medium text-zinc-500" for="gh-opp"
+          >Opponent (search)</label
+        >
+        <input
+          id="gh-opp"
+          type="search"
+          [ngModel]="opponentInput"
+          (ngModelChange)="onOpponentInput($event)"
+          placeholder="Username contains…"
+          class="gh-input"
+        />
+      </div>
+    </div>
+
+    @if (loading) {
+      <p class="text-zinc-500">Loading…</p>
+    }
+
+    <div
+      class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40 ring-1 ring-white/5"
+    >
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[780px] text-left text-sm">
+          <thead>
+            <tr
+              class="border-b border-zinc-800 text-xs uppercase tracking-wide text-zinc-500"
+            >
+              <th class="px-4 py-3 font-medium">Opponent</th>
+              <th class="px-4 py-3 font-medium">Time</th>
+              <th class="px-4 py-3 font-medium">ELO</th>
+              <th class="px-4 py-3 font-medium">Result</th>
+              <th class="px-4 py-3 font-medium">Date</th>
+              <th class="px-4 py-3 font-medium text-right">Moves</th>
+              <th class="px-4 py-3 font-medium text-right">Length</th>
+              <th class="px-4 py-3 font-medium text-right">Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (g of games; track g.gameId) {
+              <tr
+                class="border-b border-zinc-800/60 transition hover:bg-zinc-800/50"
+              >
+                <td class="px-4 py-3 font-medium text-amber-200/90">
+                  {{ g.opponentUsername }}
+                </td>
+                <td class="px-4 py-3 font-mono text-zinc-500">
+                  {{ g.timeControl }}
+                </td>
+                <td class="px-4 py-3 font-mono text-zinc-400">
+                  {{ g.opponentElo }}
+                </td>
+                <td
+                  class="px-4 py-3 font-medium capitalize"
+                  [ngClass]="resultClass(g.result)"
+                >
+                  {{ g.result }}
+                </td>
+                <td class="px-4 py-3 text-zinc-400">
+                  {{ formatWhen(g.endedAt) }}
+                </td>
+                <td class="px-4 py-3 text-right tabular-nums text-zinc-300">
+                  {{ g.moveCount }}
+                </td>
+                <td class="px-4 py-3 text-right tabular-nums text-zinc-500">
+                  {{ formatDuration(g.durationSeconds) }}
+                </td>
+                <td class="px-4 py-3 text-right text-sm">
+                  <a
+                    [routerLink]="['/replay', g.gameId]"
+                    class="text-violet-400 hover:text-violet-300"
+                    >Replay</a
+                  >
+                  <span class="mx-1 text-zinc-600">·</span>
+                  <a
+                    [routerLink]="['/review', g.gameId]"
+                    class="text-amber-200/90 hover:text-amber-100"
+                    >Review</a
+                  >
+                </td>
+              </tr>
+            } @empty {
+              @if (!loading) {
+                <tr>
+                  <td colspan="7" class="px-4 py-12 text-center text-zinc-500">
+                    No games match these filters.
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    @if (!loading && totalPages() > 1) {
+      <div
+        class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-400"
+      >
+        <p>
+          Page {{ page }} of {{ totalPages() }} · {{ total }} games
+        </p>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            (click)="prevPage()"
+            [disabled]="page <= 1"
+            class="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 disabled:opacity-40"
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            (click)="nextPage()"
+            [disabled]="page >= totalPages()"
+            class="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    }
+  </main>
+</div>

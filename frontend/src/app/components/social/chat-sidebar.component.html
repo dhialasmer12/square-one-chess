@@ -1,0 +1,184 @@
+@if (authed) {
+  <div class="chat-sidebar-root pointer-events-none fixed bottom-0 right-0 z-[100] p-3 sm:p-4">
+    @if (!expanded) {
+      <button
+        type="button"
+        (click)="toggleExpanded()"
+        class="pointer-events-auto float-right rounded-full border border-zinc-700 bg-zinc-900/95 px-4 py-2 text-sm font-medium text-amber-200/90 shadow-lg ring-1 ring-white/10 backdrop-blur hover:bg-zinc-800"
+      >
+        Chat
+      </button>
+    } @else {
+      <div
+        class="pointer-events-auto ml-auto flex h-[min(72vh,560px)] w-[min(100vw-1.5rem,360px)] flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950/95 shadow-2xl ring-1 ring-white/10 backdrop-blur"
+      >
+        <div
+          class="flex shrink-0 items-center justify-between border-b border-zinc-800 px-3 py-2"
+        >
+          <h2 class="font-display text-sm font-semibold text-board-light">
+            @if (selectedDmUserId) {
+              <button
+                type="button"
+                (click)="backToGlobal()"
+                class="mr-2 text-zinc-500 hover:text-zinc-300"
+                aria-label="Back to global chat"
+              >
+                ←
+              </button>
+              {{ selectedDmLabel() }}
+            } @else {
+              Global chat
+            }
+          </h2>
+          <button
+            type="button"
+            (click)="toggleExpanded()"
+            class="rounded-lg px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+            aria-label="Collapse chat"
+          >
+            Hide
+          </button>
+        </div>
+
+        @if (!selectedDmUserId) {
+          <div
+            class="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 text-xs"
+            role="log"
+            aria-live="polite"
+          >
+            @if (globalMessages.length === 0) {
+              <p class="text-zinc-600">No messages yet. Say hello!</p>
+            } @else {
+              @for (m of globalMessages; track m.id) {
+                <div
+                  class="rounded-lg px-2 py-1.5"
+                  [ngClass]="
+                    m.fromUserId === myUserId
+                      ? 'bg-amber-500/10'
+                      : 'bg-zinc-900/80'
+                  "
+                >
+                  <span class="font-medium text-amber-200/80">{{
+                    m.fromUsername
+                  }}</span>
+                  <span class="text-zinc-600">· {{ m.createdAt | date: 'shortTime' }}</span>
+                  <p class="mt-0.5 text-zinc-200">{{ m.content }}</p>
+                </div>
+              }
+            }
+          </div>
+          <div class="shrink-0 border-t border-zinc-800 p-2">
+            @if (sendGlobalError) {
+              <p class="mb-1 text-[11px] text-red-400">{{ sendGlobalError }}</p>
+            }
+            <div class="flex gap-1">
+              <input
+                type="text"
+                [(ngModel)]="globalDraft"
+                (keydown.enter)="sendGlobal()"
+                placeholder="Message everyone…"
+                class="min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-600"
+              />
+              <button
+                type="button"
+                (click)="sendGlobal()"
+                class="rounded-lg bg-zinc-800 px-2 py-1.5 text-xs text-amber-200/90 hover:bg-zinc-700"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div
+            class="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 text-xs"
+            role="log"
+          >
+            @if (dmMessages.length === 0) {
+              <p class="text-zinc-600">No messages yet.</p>
+            } @else {
+              @for (m of dmMessages; track m.id) {
+                <div
+                  class="rounded-lg px-2 py-1.5"
+                  [ngClass]="
+                    m.fromUserId === myUserId
+                      ? 'bg-amber-500/10'
+                      : 'bg-zinc-900/80'
+                  "
+                >
+                  <span class="font-medium text-amber-200/80">{{
+                    m.fromUsername
+                  }}</span>
+                  <span class="text-zinc-600">· {{ m.createdAt | date: 'shortTime' }}</span>
+                  <p class="mt-0.5 text-zinc-200">{{ m.content }}</p>
+                </div>
+              }
+            }
+          </div>
+          <div class="shrink-0 border-t border-zinc-800 p-2">
+            @if (sendDmError) {
+              <p class="mb-1 text-[11px] text-red-400">{{ sendDmError }}</p>
+            }
+            <div class="flex gap-1">
+              <input
+                type="text"
+                [(ngModel)]="dmDraft"
+                (keydown.enter)="sendDm()"
+                placeholder="Direct message…"
+                class="min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-600"
+              />
+              <button
+                type="button"
+                (click)="sendDm()"
+                class="rounded-lg bg-zinc-800 px-2 py-1.5 text-xs text-amber-200/90 hover:bg-zinc-700"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        }
+
+        <div
+          class="max-h-[40%] shrink-0 overflow-y-auto border-t border-zinc-800 p-3"
+        >
+          <p class="mb-2 font-display text-xs font-semibold text-zinc-400">
+            Friends
+          </p>
+          <div class="mb-3 flex gap-1">
+            <input
+              type="text"
+              [(ngModel)]="requestUsername"
+              (keydown.enter)="sendFriendRequest()"
+              placeholder="Username"
+              class="min-w-0 flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 placeholder:text-zinc-600"
+            />
+            <button
+              type="button"
+              [disabled]="requestBusy"
+              (click)="sendFriendRequest()"
+              class="shrink-0 rounded-lg bg-zinc-800 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-700 disabled:opacity-50"
+            >
+              Add
+            </button>
+          </div>
+          @if (requestError) {
+            <p class="mb-2 text-[11px] text-red-400">{{ requestError }}</p>
+          }
+          @if (loadFriendsError) {
+            <p class="mb-2 text-[11px] text-amber-600">{{ loadFriendsError }}</p>
+          }
+          <app-friends-list
+            [myUserId]="myUserId"
+            [friends]="friends"
+            [incoming]="incoming"
+            [outgoing]="outgoing"
+            [onlineFriendIds]="onlineFriendIds"
+            [selectedFriendId]="selectedDmUserId"
+            (pickFriend)="pickFriend($event)"
+            (accept)="onAccept($event)"
+            (reject)="onReject($event)"
+          />
+        </div>
+      </div>
+    }
+  </div>
+}

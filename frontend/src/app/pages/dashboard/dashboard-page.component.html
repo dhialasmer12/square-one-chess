@@ -1,0 +1,95 @@
+<div class="dash-page text-zinc-100">
+  <header
+    class="sticky top-0 z-20 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md"
+  >
+    <div
+      class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3"
+    >
+      <div>
+        <p class="font-display text-lg font-semibold text-board-light">
+          Analytics
+        </p>
+        <p class="text-xs text-zinc-500">
+          @if (mode === 'admin') {
+            Platform dashboard
+          } @else if (mode === 'player') {
+            Your stats
+          }
+        </p>
+      </div>
+      <nav class="flex flex-wrap gap-2">
+        <a
+          routerLink="/lobby"
+          class="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800"
+          >Lobby</a
+        >
+        <a
+          routerLink="/puzzles"
+          class="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800"
+          >Puzzles</a
+        >
+        <a
+          routerLink="/leaderboard"
+          class="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800"
+          >Leaderboard</a
+        >
+        <a
+          routerLink="/profile"
+          class="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800"
+          >Profile</a
+        >
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl space-y-6 px-4 py-6">
+    @if (mode === 'loading') {
+      <p class="text-zinc-500">Loading analytics…</p>
+    }
+    @if (mode === 'error') {
+      <p class="text-red-400">{{ loadError }}</p>
+    }
+
+    @if (mode === 'admin' && platform) {
+      <app-stats-cards [platformKpis]="platform.stats" />
+      <div class="grid gap-6 lg:grid-cols-2">
+        <app-user-growth-chart [points]="platform.userGrowth" />
+        <app-game-volume-chart [points]="platform.gameVolume" />
+        <app-opening-pie-chart [slices]="platform.popularOpenings" />
+        <div
+          class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 flex flex-col justify-center"
+        >
+          <h3 class="text-sm font-semibold text-zinc-300">Game length</h3>
+          <p class="mt-3 text-3xl font-display text-board-light">
+            {{ platform.averageGameLength.averageMoves | number: '1.1-1' }}
+            <span class="text-lg font-normal text-zinc-500">avg moves</span>
+          </p>
+          <p class="mt-2 text-sm text-zinc-500">
+            Median {{ platform.averageGameLength.medianMoves }} moves ·
+            {{ platform.averageGameLength.sampleGames | number }} finished games in database
+          </p>
+        </div>
+      </div>
+      <app-elo-distribution-chart [buckets]="platform.eloDistribution" />
+      <app-activity-heatmap [data]="platform.activityHeatmap" />
+    }
+
+    @if (mode === 'player' && player && playerKpis) {
+      <app-stats-cards [playerKpis]="playerKpis" />
+      <div class="grid gap-6 lg:grid-cols-2">
+        <app-game-volume-chart
+          [points]="player.personalGameVolume"
+          [heading]="'Your finished games (30d)'"
+        />
+        <app-opening-pie-chart
+          [slices]="player.personalOpenings"
+          [heading]="'Your first moves (from your games)'"
+        />
+      </div>
+      <p class="text-sm text-zinc-500">
+        Full platform metrics (growth, ELO histogram, activity heatmap) are
+        available to administrators.
+      </p>
+    }
+  </main>
+</div>

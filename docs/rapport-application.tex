@@ -1,0 +1,222 @@
+% Rapport technique — Square One Chess (PFE)
+% Compiler avec : pdflatex (2 passes) ou latexmk -pdf
+\documentclass[11pt,a4paper]{report}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  urlcolor=blue!60!black,
+  citecolor=blue!60!black,
+  pdftitle={Rapport technique — Square One Chess},
+}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!10},
+  columns=fullflexible,
+}
+
+\title{\textbf{Square One Chess}\\[0.4em]
+\large Plateforme web d'échecs en temps réel — Rapport d'application}
+\author{Projet de fin d'études (PFE)}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Ce document décrit l'application \emph{Square One Chess}~: une plateforme complète permettant de jouer aux échecs en ligne, avec authentification, matchmaking, parties en direct (WebSocket), tournois, social (amis, chat), statistiques (classements, Elo par format de temps), puzzles tactiques, et fonctionnalités d'aide à l'entraînement basées sur des heuristiques (\texttt{chess.js}). Le backend repose sur Node.js (Express, TypeScript, Prisma, SQLite) et Socket.io~; le frontend est une SPA Angular~17 avec Tailwind CSS.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\chapter{Introduction et contexte}
+
+\section{Présentation du projet}
+
+\textit{Square One Chess} est une application client-serveur dédiée aux échecs sur le web. Elle vise à offrir une expérience comparable aux plateformes grand public~: création de parties, file d'attente pour trouver un adversaire, interface de jeu avec mise à jour en temps réel, historique et relecture des parties, ainsi que des modules pédagogiques (recommandations de leçons, revue de partie) et compétitifs (tournois, classements).
+
+\section{Objectifs fonctionnels}
+
+Les objectifs principaux couverts par le dépôt sont les suivants~:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Comptes utilisateurs}~: inscription, connexion, vérification d'e-mail, réinitialisation de mot de passe, profil.
+  \item \textbf{Parties}~: création de parties, jeu contre un autre joueur ou contre une place ``bot'' (IA / siège ouvert), validation des coups, abandon, contrôle du temps (libellés type \texttt{10+0}).
+  \item \textbf{Temps réel}~: synchronisation de l'état de la partie via Socket.io (salles par identifiant de partie).
+  \item \textbf{Matchmaking}~: file d'attente et mise en relation des joueurs.
+  \item \textbf{Statistiques}~: Elo global et par classe de temps (bullet, blitz, rapid), historique Elo, classements et filtres temporels.
+  \item \textbf{Social}~: demandes d'amis, liste d'amis, chat (salon global, partie, conversation privée selon les routes).
+  \item \textbf{Tournois}~: création, inscription, bracket, matchs liés à des parties, chat de tournoi.
+  \item \textbf{Puzzles}~: puzzle du jour, puzzles aléatoires/thématiques, suivi des résolutions, indices.
+  \item \textbf{Analytics}~: endpoints réservés aux administrateurs ou au propriétaire pour agrégats plateforme / utilisateur.
+  \item \textbf{Aide à l'entraînement (heuristique)}~: suggestion de coups, estimation de niveau, recommandation de leçons, puzzles issus des parties, revue de partie annotée.
+\end{itemize}
+
+\chapter{Architecture logicielle}
+
+\section{Vue d'ensemble}
+
+L'architecture est \textbf{découpée en deux dépôts applicatifs} au sein d'un même monorepo logique~:
+\begin{enumerate}
+  \item \textbf{API backend} (répertoire racine du projet)~: serveur HTTP Express monté sous le préfixe \texttt{/api}, avec un point de santé \texttt{GET /health}.
+  \item \textbf{Frontend SPA} (dossier \texttt{frontend/})~: application Angular~17 en composants standalone, consommant l'API REST et les événements Socket.io.
+\end{enumerate}
+
+Le serveur HTTP et Socket.io partagent le même processus d'écoute (voir \texttt{src/server.ts}), ce qui simplifie le déploiement et le partage de session.
+
+\section{Pile technologique}
+
+\begin{table}[h]
+  \centering
+  \caption{Technologies principales}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    Couche & Technologies \\
+    \midrule
+    Backend & Node.js, Express, TypeScript \\
+    Persistance & Prisma ORM, SQLite (\texttt{DATABASE\_URL}) \\
+    Temps réel & Socket.io \\
+    Règles d'échecs & \texttt{chess.js} (côté serveur et client) \\
+    Moteur (optionnel) & Dépendance \texttt{stockfish} côté API pour besoins moteur \\
+    Sécurité HTTP & \texttt{helmet}, CORS avec credentials, JWT / cookie HttpOnly \\
+    Frontend & Angular~17, RxJS, Tailwind CSS, Chart.js \\
+    Client temps réel & \texttt{socket.io-client} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Organisation des répertoires}
+
+\begin{itemize}[leftmargin=*]
+  \item \texttt{src/} — code source de l'API (compilé vers \texttt{dist/}).
+  \item \texttt{prisma/} — schéma, migrations, script de seed.
+  \item \texttt{frontend/src/app/} — pages, composants, services, garde-fous de navigation.
+  \item \texttt{docs/CODEBASE.md} — carte détaillée du code et liste des endpoints.
+\end{itemize}
+
+\chapter{Modèle de données}
+
+Le schéma Prisma (\texttt{prisma/schema.prisma}) modélise notamment~:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{User} — identité, mot de passe hashé, drapeaux de vérification d'e-mail et jetons associés, Elo global et par format, compteurs de parties et séries de victoires.
+  \item \textbf{Game} / \textbf{Move} — parties entre deux joueurs, FEN courant, PGN optionnel, statut, gagnant, contrôle du temps, difficulté bot si applicable~; historique des coups avec cases départ/arrivée et promotion.
+  \item \textbf{QueueEntry} — entrée de file pour le matchmaking.
+  \item \textbf{Tournament}, \textbf{TournamentRegistration}, \textbf{TournamentMatch}, \textbf{TournamentMessage} — cycle de vie des tournois et messagerie associée.
+  \item \textbf{Friend} — relations d'amitié avec statut.
+  \item \textbf{ChatMessage} — messages indexés par \texttt{roomId} et relations utilisateurs.
+  \item \textbf{Puzzle}, \textbf{DailyPuzzle}, \textbf{UserPuzzleStats} — banque de puzzles tactiques, puzzle du jour, statistiques par utilisateur.
+\end{itemize}
+
+SQLite est adapté au prototypage et aux déploiements légers~; une migration vers PostgreSQL reste possible en adaptant le \texttt{provider} Prisma.
+
+\chapter{API REST et sécurité}
+
+\section{Préfixe et authentification}
+
+Toutes les routes métier sont sous \texttt{/api/...}. L'authentification repose sur un JWT vérifiable via l'en-tête \texttt{Authorization: Bearer <token>} ou, le cas échéant, un cookie HttpOnly nommé \texttt{square\_one\_access\_token} (comportement décrit dans le middleware d'authentification).
+
+Les erreurs renvoient typiquement un JSON de la forme \texttt{\{ "error": string, "details"?: ... \}}.
+
+\section{Aperçu des modules HTTP}
+
+\begin{longtable}{@{}p{3.2cm}p{10.5cm}@{}}
+  \toprule
+  Montage & Rôle \\
+  \midrule
+  \endfirsthead
+  \multicolumn{2}{c}{\textit{(suite)}} \\
+  \toprule
+  Montage & Rôle \\
+  \midrule
+  \endhead
+  \texttt{/api/auth} & Inscription, connexion, déconnexion, profil, vérification d'e-mail, mot de passe oublié / réinitialisation. \\
+  \texttt{/api/games} & Création de parties, bot, historique, coups, statut, PGN, abandon, etc. \\
+  \texttt{/api/stats} & Classements, stats utilisateur, historique Elo, rang. \\
+  \texttt{/api/ai} & Prédiction de coups, estimation de niveau, leçons, puzzles de leçon, revue de partie. \\
+  \texttt{/api/tournaments} & CRUD / rejoindre / bracket / matchs / chat. \\
+  \texttt{/api/analytics} & Métriques plateforme ou par utilisateur (souvent restreint admin / self). \\
+  \texttt{/api/friends} & Demandes, acceptation / refus, liste, suppression. \\
+  \texttt{/api/chat} & Historique de messages par salon / partie / interlocuteur. \\
+  \texttt{/api/puzzles} & Daily, aléatoire, thèmes, résolution, indices, détail. \\
+  \bottomrule
+\end{longtable}
+
+Pour la liste exhaustive des verbes HTTP et paramètres de requête, se reporter à \texttt{docs/CODEBASE.md}.
+
+\chapter{Temps réel (Socket.io)}
+
+Les sockets sont enregistrés dans \texttt{src/sockets/}~: une instance globale (\texttt{io.ts}) et la logique de jeu (\texttt{game.socket.ts}) gèrent la jonction aux parties, l'émission des coups, les abandons / nuls selon les règles implémentées, et le nettoyage à la déconnexion. La persistance reste assurée par les services (notamment \texttt{game.service.ts})~; les sockets servent de canal de diffusion et de coordination avec l'état en mémoire (\texttt{active-games}, etc.).
+
+\chapter{Frontend Angular}
+
+\section{Routage et garde-fous}
+
+Les routes sont définies dans \texttt{frontend/src/app/app.routes.ts}. Les garde-fous \texttt{auth.guard} et \texttt{guest.guard} séparent les zones publiques (connexion, inscription) des zones protégées (accueil, lobby, partie, historique, profil, tournois, etc.).
+
+\section{Pages représentatives}
+
+\begin{itemize}[leftmargin=*]
+  \item \texttt{/lobby} — file d'attente et accès aux parties.
+  \item \texttt{/game/:gameId} — plateau en direct et horloges.
+  \item \texttt{/replay/:gameId} — relecture.
+  \item \texttt{/review/:gameId} — revue post-partie (heuristique).
+  \item \texttt{/history}, \texttt{/dashboard}, \texttt{/profile}, \texttt{/leaderboard}, \texttt{/tournaments}.
+\end{itemize}
+
+Les services Angular encapsulent les appels HTTP et les abonnements Socket.io~; les modèles TypeScript du client doivent rester alignés avec \texttt{src/types/index.ts} côté API.
+
+\chapter{Fonctionnalités intelligentes (coaching)}
+
+Les fonctionnalités d'IA pédagogique documentées reposent principalement sur \texttt{chess.js} et des heuristiques dans \texttt{src/services/ai.service.ts}~: évaluation positionnelle simplifiée, comparaison d'un coup joué au meilleur coup légal, identification de motifs d'erreurs récurrents sur les parties récentes, construction d'une revue annotée et extraction de puzzles contextuels. Cette approche est complémentaire à un moteur UCI complet et privilégie la latence et l'intégration directe dans le flux HTTP existant.
+
+\chapter{Déploiement et configuration}
+
+Variables d'environnement typiques~: \texttt{DATABASE\_URL}, secret JWT, paramètres d'e-mail (Nodemailer) pour la vérification et la réinitialisation. En production, configurer CORS pour n'autoriser que l'origine du frontend, et ne jamais committer de secrets.
+
+Commandes de développement (rappel)~:
+\begin{lstlisting}
+# Backend (racine)
+npm install && npx prisma generate && npx prisma db push
+npm run dev
+
+# Frontend
+cd frontend && npm install && npm start
+\end{lstlisting}
+
+\chapter{Conclusion}
+
+\textit{Square One Chess} constitue une plateforme modulaire couvrant le cycle complet d'une application d'échecs en ligne~: comptes, jeu temps réel, statistiques, social, tournois, puzzles et outils d'analyse heuristique. L'architecture en couches (routes $\rightarrow$ contrôleurs $\rightarrow$ services $\rightarrow$ Prisma) et la documentation \texttt{CODEBASE.md} facilitent la maintenance et l'évolution (par exemple export PGN avancé, classement FIDE-like, ou passage à PostgreSQL).
+
+\newpage
+\appendix
+\chapter{Bibliographie et ressources}
+
+\begin{itemize}[leftmargin=*]
+  \item Documentation Express — \url{https://expressjs.com/}
+  \item Prisma — \url{https://www.prisma.io/docs}
+  \item Socket.io — \url{https://socket.io/docs/v4/}
+  \item Angular — \url{https://angular.dev/}
+  \item chess.js — \url{https://github.com/jhlywa/chess.js}
+\end{itemize}
+
+\end{document}

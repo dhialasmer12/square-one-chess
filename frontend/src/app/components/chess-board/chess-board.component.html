@@ -1,0 +1,55 @@
+<div class="chess-board-host" #hostRef>
+  <div class="board-surface">
+    <div
+      class="coord-frame"
+      [class.coord-frame--no-labels]="!showCoordinates"
+    >
+      <div
+        class="board-row"
+        [class.board-row--compact]="!showCoordinates"
+      >
+        <div
+          class="rank-labels"
+          [class.rank-labels--hidden]="!showCoordinates"
+          [attr.aria-hidden]="!showCoordinates"
+        >
+          @for (r of rankLabels; track r) {
+            <span class="coord-label">{{ r }}</span>
+          }
+        </div>
+        <div class="board-square-wrap">
+          <div class="cb2-wrap" #boardRoot></div>
+
+          <div class="custom-highlights" aria-hidden="true">
+            @for (h of customHighlights; track h.square + h.color) {
+              <div
+                class="highlight-cell"
+                [ngStyle]="highlightStyle(h.square, h.color)"
+              ></div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="file-row"
+        [class.file-row--hidden]="!showCoordinates"
+        [attr.aria-hidden]="!showCoordinates"
+      >
+        <div class="file-corner"></div>
+        <div class="file-labels">
+          @for (f of fileLabels; track f) {
+            <span class="coord-label">{{ f }}</span>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading-overlay" role="status" aria-live="polite">
+      <span class="sr-only">Loading chess board</span>
+      <div class="loading-spinner"></div>
+    </div>
+  }
+</div>

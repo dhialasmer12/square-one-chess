@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  password           String
+  username           String   @unique
+  emailVerified      Boolean  @default(false)
+  emailVerifyTokenHash String?
+  emailVerifyExpiresAt DateTime?
+  passwordResetTokenHash String?
+  passwordResetExpiresAt DateTime?
+  elo                Int      @default(1200)
+  /** Per time-class ratings (see `timeControlToRatingFormat`). */
+  eloBullet          Int      @default(1200)
+  eloBlitz           Int      @default(1200)
+  eloRapid           Int      @default(1200)
+  gamesPlayed        Int      @default(0)
+  gamesWon           Int      @default(0)
+  winStreak          Int      @default(0)
+  longestWinStreak   Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  gamesAsWhite Game[]       @relation("WhitePlayer")
+  gamesAsBlack Game[]       @relation("BlackPlayer")
+  queueEntries QueueEntry[]
+  tournamentRegistrations TournamentRegistration[]
+  tournamentMessages      TournamentMessage[]
+  friendsInitiated        Friend[]        @relation("FriendInitiator")
+  friendsReceived         Friend[]        @relation("FriendTarget")
+  chatMessagesSent        ChatMessage[]   @relation("ChatFrom")
+  chatMessagesReceived    ChatMessage[]   @relation("ChatTo")
+}
+
+model Friend {
+  id        String   @id @default(uuid())
+  userId    String
+  friendId  String
+  status    String
+  createdAt DateTime @default(now())
+
+  user   User @relation("FriendInitiator", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("FriendTarget", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+  @@index([friendId])
+  @@index([userId, status])
+}
+
+model ChatMessage {
+  id         String   @id @default(uuid())
+  fromUserId String
+  toUserId   String?
+  roomId     String
+  content    String
+  type       String
+  createdAt  DateTime @default(now())
+
+  fromUser User  @relation("ChatFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User? @relation("ChatTo", fields: [toUserId], references: [id], onDelete: SetNull)
+
+  @@index([roomId, createdAt])
+  @@index([fromUserId, createdAt])
+  @@index([toUserId, createdAt])
+}
+
+model Game {
+  id            String    @id @default(uuid())
+  whitePlayerId String
+  blackPlayerId String
+  winner        String?
+  status        String    @default("waiting")
+  fen           String
+  pgn           String?
+  /// Clock label e.g. "10+0" (minutes + increment seconds).
+  timeControl   String    @default("10+0")
+  /** When playing vs AI (open-seat), controls engine depth / randomness. */
+  botDifficulty String?
+  startedAt     DateTime  @default(now())
+  endedAt       DateTime?
+
+  whitePlayer User   @relation("WhitePlayer", fields: [whitePlayerId], references: [id], onDelete: Restrict)
+  blackPlayer User   @relation("BlackPlayer", fields: [blackPlayerId], references: [id], onDelete: Restrict)
+  moves       Move[]
+  tournamentMatch TournamentMatch?
+
+  @@index([status])
+  @@index([whitePlayerId])
+  @@index([blackPlayerId])
+}
+
+/// Square coordinates use `fromSquare` / `toSquare` (e.g. e2, e4) — `from`/`to` are reserved in Prisma.
+model Move {
+  id         String   @id @default(uuid())
+  gameId     String
+  moveNumber Int
+  fromSquare String   @map("from_square")
+  toSquare   String   @map("to_square")
+  piece      String
+  promotion  String?
+  fen        String
+  timestamp  DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId])
+}
+
+model QueueEntry {
+  id       String   @id @default(uuid())
+  userId   String
+  joinedAt DateTime @default(now())
+  elo      Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Tournament {
+  id           String   @id @default(uuid())
+  name         String
+  type         String
+  maxPlayers   Int
+  status       String   @default("waiting")
+  currentRound Int      @default(0)
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  registrations TournamentRegistration[]
+  matches       TournamentMatch[]
+  messages      TournamentMessage[]
+
+  @@index([status])
+}
+
+model TournamentRegistration {
+  id           String   @id @default(uuid())
+  userId       String
+  tournamentId String
+  joinDate     DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tournamentId])
+  @@index([tournamentId])
+}
+
+model TournamentMatch {
+  id            String  @id @default(uuid())
+  tournamentId  String
+  round         Int
+  matchIndex    Int     @default(0)
+  whitePlayerId String
+  blackPlayerId String
+  winnerId      String?
+  gameId        String? @unique
+  status        String  @default("pending")
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  game       Game?      @relation(fields: [gameId], references: [id], onDelete: SetNull)
+
+  @@index([tournamentId])
+  @@index([tournamentId, round])
+}
+
+model TournamentMessage {
+  id           String   @id @default(uuid())
+  tournamentId String
+  userId       String
+  body         String
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@index([tournamentId])
+}
+
+/// Tactical puzzle bank.
+/// `moves` is a JSON-encoded SAN array (SQLite has no native array type),
+/// e.g. '["Qxh7+","Kxh7","Rh3#"]'. Use the helpers in `puzzle.service.ts` to
+/// (de)serialize. Difficulty is stored in `rating` (Elo-style, 300–2000).
+model Puzzle {
+  id          String   @id @default(uuid())
+  fen         String
+  moves       String
+  theme       String
+  rating      Int
+  tries       Int      @default(0)
+  successes   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  daily       DailyPuzzle[]
+  userStats   UserPuzzleStats[]
+
+  @@index([theme])
+  @@index([rating])
+}
+
+model UserPuzzleStats {
+  userId    String
+  puzzleId  String
+  solved    Boolean
+  attempts  Int       @default(1)
+  solvedAt  DateTime?
+
+  puzzle Puzzle @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, puzzleId])
+  @@index([userId])
+  @@index([userId, solvedAt])
+  @@map("user_puzzle_stats")
+}
+
+/// One row per UTC day = the puzzle of the day shared by all users.
+model DailyPuzzle {
+  id        String   @id @default(uuid())
+  puzzleId  String
+  date      DateTime @unique @default(now())
+  puzzle    Puzzle   @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+}

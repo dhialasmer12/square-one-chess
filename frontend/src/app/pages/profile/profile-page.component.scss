@@ -1,0 +1,21 @@
+.stat-card {
+  @apply rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3;
+}
+
+.stat-label {
+  @apply text-xs font-medium uppercase tracking-wide text-zinc-500;
+}
+
+.stat-value {
+  @apply mt-1 text-xl font-semibold tabular-nums text-board-light;
+}
+
+.chart-wrap {
+  position: relative;
+  height: 220px;
+}
+
+.chart-wrap--pie {
+  max-width: 280px;
+  margin-inline: auto;
+}

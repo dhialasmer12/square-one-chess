@@ -1,0 +1,151 @@
+@startuml Square_One_Chess_Domain_Classes
+title Diagramme de classes — Modèle métier (Prisma)
+
+skinparam classAttributeIconSize 0
+
+class User {
+  +id: String
+  +email: String
+  +username: String
+  +password: String
+  +emailVerified: Boolean
+  +elo: Int
+  +eloBullet: Int
+  +eloBlitz: Int
+  +eloRapid: Int
+  +gamesPlayed: Int
+  +gamesWon: Int
+  +winStreak: Int
+  +createdAt: DateTime
+}
+
+class Game {
+  +id: String
+  +whitePlayerId: String
+  +blackPlayerId: String
+  +status: String
+  +fen: String
+  +pgn: String?
+  +timeControl: String
+  +botDifficulty: String?
+  +winner: String?
+  +startedAt: DateTime
+  +endedAt: DateTime?
+}
+
+class Move {
+  +id: String
+  +gameId: String
+  +moveNumber: Int
+  +fromSquare: String
+  +toSquare: String
+  +piece: String
+  +promotion: String?
+  +fen: String
+  +timestamp: DateTime
+}
+
+class QueueEntry {
+  +id: String
+  +userId: String
+  +elo: Int
+  +joinedAt: DateTime
+}
+
+class Friend {
+  +id: String
+  +userId: String
+  +friendId: String
+  +status: String
+  +createdAt: DateTime
+}
+
+class ChatMessage {
+  +id: String
+  +fromUserId: String
+  +toUserId: String?
+  +roomId: String
+  +content: String
+  +type: String
+  +createdAt: DateTime
+}
+
+class Tournament {
+  +id: String
+  +name: String
+  +type: String
+  +maxPlayers: Int
+  +status: String
+  +currentRound: Int
+  +createdById: String?
+}
+
+class TournamentRegistration {
+  +id: String
+  +userId: String
+  +tournamentId: String
+  +joinDate: DateTime
+}
+
+class TournamentMatch {
+  +id: String
+  +tournamentId: String
+  +round: Int
+  +whitePlayerId: String
+  +blackPlayerId: String
+  +winnerId: String?
+  +gameId: String?
+  +status: String
+}
+
+class TournamentMessage {
+  +id: String
+  +tournamentId: String
+  +userId: String
+  +body: String
+}
+
+class Puzzle {
+  +id: String
+  +fen: String
+  +moves: String
+  +theme: String
+  +rating: Int
+  +tries: Int
+  +successes: Int
+}
+
+class DailyPuzzle {
+  +id: String
+  +puzzleId: String
+  +date: DateTime
+}
+
+class UserPuzzleStats {
+  +userId: String
+  +puzzleId: String
+  +solved: Boolean
+  +attempts: Int
+  +solvedAt: DateTime?
+}
+
+User "1" -- "0..*" Game : joue (blanc)
+User "1" -- "0..*" Game : joue (noir)
+Game "1" *-- "0..*" Move : contient
+User "1" -- "0..*" QueueEntry
+User "1" -- "0..*" Friend : initie
+User "1" -- "0..*" Friend : reçoit
+User "1" -- "0..*" ChatMessage : envoie
+User "1" -- "0..*" ChatMessage : reçoit
+
+Tournament "1" -- "0..*" TournamentRegistration
+User "1" -- "0..*" TournamentRegistration
+Tournament "1" -- "0..*" TournamentMatch
+TournamentMatch "0..1" -- "0..1" Game
+Tournament "1" -- "0..*" TournamentMessage
+User "1" -- "0..*" TournamentMessage
+
+Puzzle "1" -- "0..*" DailyPuzzle
+Puzzle "1" -- "0..*" UserPuzzleStats
+
+@enduml

@@ -1,0 +1,55 @@
+{
+  "name": "square-one-chess-api",
+  "version": "1.0.0",
+  "description": "Chess platform backend — Express, TypeScript, Prisma, Socket.io",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "kill-port 3000 && nodemon",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:seed": "prisma db seed",
+    "prisma:studio": "prisma studio"
+  },
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+  },
+  "keywords": [
+    "chess",
+    "express",
+    "typescript"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^6.3.0",
+    "@types/nodemailer": "^8.0.0",
+    "bcryptjs": "^2.4.3",
+    "chess.js": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "nodemailer": "^8.0.7",
+    "prisma": "^6.3.0",
+    "socket.io": "^4.8.1",
+    "sqlite3": "^5.1.7",
+    "stockfish": "^18.0.7",
+    "uuid": "^11.0.5"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^22.10.5",
+    "kill-port": "^2.0.1",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}

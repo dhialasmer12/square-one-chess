@@ -1,0 +1,17 @@
+.tour-page {
+  min-height: 100vh;
+  background: linear-gradient(
+    to bottom,
+    rgb(9 9 11),
+    rgb(24 24 27 / 0.95),
+    rgb(9 9 11)
+  );
+}
+
+.tour-bracket {
+  align-items: flex-start;
+}
+
+.tour-round {
+  min-width: 11rem;
+}

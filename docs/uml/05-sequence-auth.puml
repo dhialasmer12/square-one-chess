@@ -1,0 +1,33 @@
+@startuml Sequence_Authentication
+title Diagramme de séquence — Connexion utilisateur
+
+actor Joueur as U
+participant "Angular\n(AuthService)" as FE
+participant "AuthController" as AC
+participant "AuthService" as AS
+database "SQLite\n(Prisma)" as DB
+
+U -> FE : saisir email / mot de passe
+FE -> AC : POST /api/auth/login
+AC -> AS : login(email, password)
+AS -> DB : find User by email
+AS -> AS : bcrypt.compare(password)
+AS -> AS : sign JWT
+AC -> FE : Set-Cookie square_one_access_token\n+ user JSON
+FE -> FE : stocker état utilisateur
+FE --> U : redirection dashboard / lobby
+
+note over FE, AC
+  Les requêtes suivantes envoient
+  le cookie (credentials) ou
+  Authorization: Bearer <token>
+end note
+
+U -> FE : accès route protégée
+FE -> AC : GET /api/auth/me
+AC -> AC : verifyToken middleware
+AC -> AS : getMe(userId)
+AS -> DB : find User
+AC --> FE : profil utilisateur
+
+@enduml

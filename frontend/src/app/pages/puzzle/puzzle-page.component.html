@@ -1,0 +1,231 @@
+<div
+  class="min-h-screen bg-gradient-to-b from-zinc-950 via-board-frame to-zinc-950 text-zinc-100"
+>
+  <header
+    class="sticky top-0 z-20 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md"
+  >
+    <div
+      class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3"
+    >
+      <div class="flex items-center gap-3">
+        <span class="text-2xl text-board-light" aria-hidden="true">♔</span>
+        <div>
+          <p class="font-display text-lg font-semibold text-board-light">Puzzles</p>
+          <p class="text-xs text-zinc-500">Tactics · daily · streaks</p>
+        </div>
+      </div>
+      <nav class="flex flex-wrap items-center gap-2">
+        <a
+          routerLink="/lobby"
+          class="rounded-lg px-3 py-1.5 text-sm text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200"
+          >Lobby</a
+        >
+        <a
+          routerLink="/dashboard"
+          class="rounded-lg px-3 py-1.5 text-sm text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200"
+          >Dashboard</a
+        >
+        <a
+          routerLink="/tournaments"
+          class="rounded-lg px-3 py-1.5 text-sm text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200"
+          >Tournaments</a
+        >
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-8">
+    @if (loadError) {
+      <p
+        class="mb-6 rounded-xl border border-red-500/40 bg-red-950/30 px-4 py-3 text-red-200"
+      >
+        {{ loadError }}
+      </p>
+    }
+
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div class="space-y-6">
+        <section
+          class="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-5 shadow-xl ring-1 ring-white/5"
+        >
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              @if (puzzle) {
+                <p
+                  class="mb-1 inline-flex rounded-full border border-[#3d6649]/50 bg-[#1f2420] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-[#81b64c]"
+                >
+                  {{ themeLabel(puzzle.theme) }}
+                </p>
+                <h1 class="font-display text-2xl font-bold text-zinc-50">
+                  Rating {{ puzzle.rating }}
+                </h1>
+                <p class="mt-1 text-sm text-zinc-500">
+                  Find the best first move · {{ puzzle.plies }} ply line stored
+                </p>
+              } @else {
+                <h1 class="font-display text-2xl font-bold text-zinc-50">
+                  Loading…
+                </h1>
+              }
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                (click)="loadDaily()"
+                [disabled]="loading"
+                class="rounded-xl border border-zinc-600 bg-zinc-950/60 px-4 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
+              >
+                Daily
+              </button>
+              <button
+                type="button"
+                (click)="newRandom()"
+                [disabled]="loading"
+                class="rounded-xl bg-[#81b64c] px-4 py-2 text-sm font-bold text-zinc-950 shadow-lg hover:bg-[#95c965] disabled:opacity-50"
+              >
+                New puzzle
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-400"
+          >
+            <span
+              class="rounded-lg bg-zinc-800 px-2 py-1 font-medium text-zinc-200"
+              >Attempts: {{ attempts }}</span
+            >
+            @if (feedback !== 'idle' && feedbackText) {
+              <span
+                class="rounded-lg px-2 py-1 font-medium"
+                [class.flash-ok]="feedback === 'ok'"
+                [class.flash-bad]="feedback === 'bad'"
+                [class.text-emerald-300]="feedback === 'ok'"
+                [class.text-red-300]="feedback === 'bad'"
+              >
+                {{ feedbackText }}
+              </span>
+            }
+          </div>
+
+          <div class="mt-6 flex flex-wrap gap-2">
+            <button
+              type="button"
+              (click)="showHint()"
+              [disabled]="hintBusy || !puzzle || boardLocked"
+              class="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-sm font-medium text-amber-200 hover:bg-amber-500/20 disabled:opacity-40"
+            >
+              @if (hintBusy) {
+                Hint…
+              } @else {
+                Hint
+              }
+            </button>
+            <button
+              type="button"
+              (click)="aiNudge()"
+              [disabled]="aiBusy || !puzzle || boardLocked"
+              class="rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-1.5 text-sm font-medium text-sky-200 hover:bg-sky-500/20 disabled:opacity-40"
+            >
+              @if (aiBusy) {
+                AI…
+              } @else {
+                AI idea
+              }
+            </button>
+          </div>
+
+          <div class="puzzle-board-wrap mx-auto mt-6">
+            @if (puzzle) {
+              <app-chess-board
+                #chessBoard
+                [fen]="puzzleFen"
+                [orientation]="orientation"
+                [disabled]="boardLocked"
+                (moveEvent)="onBoardMove($event)"
+              />
+            }
+          </div>
+        </section>
+      </div>
+
+      <aside class="space-y-6 lg:sticky lg:top-24 lg:self-start">
+        @if (stats) {
+          <div
+            class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 ring-1 ring-white/5"
+          >
+            <h2 class="font-display text-sm font-semibold text-board-light">
+              Progress
+            </h2>
+            <dl class="mt-3 space-y-2 text-sm">
+              <div class="flex justify-between gap-2">
+                <dt class="text-zinc-500">Puzzle rating</dt>
+                <dd class="font-semibold text-[#81b64c]">
+                  {{ stats.puzzleRating }}
+                </dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-zinc-500">Chess ELO</dt>
+                <dd class="text-zinc-200">{{ stats.chessElo }}</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-zinc-500">Solved</dt>
+                <dd class="text-zinc-200">{{ stats.solvedCount }}</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-zinc-500">Success</dt>
+                <dd class="text-zinc-200">{{ stats.successRate }}%</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-zinc-500">Streak</dt>
+                <dd class="text-zinc-200">
+                  {{ stats.currentStreak }}
+                  <span class="text-zinc-500"
+                    >(best {{ stats.bestStreak }})</span
+                  >
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          <div
+            class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 ring-1 ring-white/5"
+          >
+            <h2 class="font-display text-sm font-semibold text-board-light">
+              Last 14 days
+            </h2>
+            <div class="mt-3 h-40">
+              <canvas #trendCanvas></canvas>
+            </div>
+          </div>
+
+          <div
+            class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 ring-1 ring-white/5"
+          >
+            <h2 class="font-display text-sm font-semibold text-board-light">
+              Recent solves
+            </h2>
+            @if (stats.recentSolved.length === 0) {
+              <p class="mt-2 text-sm text-zinc-500">No solves yet.</p>
+            } @else {
+              <ul class="mt-3 max-h-64 space-y-2 overflow-y-auto text-sm">
+                @for (r of stats.recentSolved; track r.puzzleId + r.solvedAt) {
+                  <li
+                    class="flex items-center justify-between gap-2 rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-2"
+                  >
+                    <span class="text-zinc-300">{{
+                      themeLabel(r.theme)
+                    }}</span>
+                    <span class="text-xs text-zinc-500"
+                      >{{ r.rating }} · {{ r.attempts }} tries</span
+                    >
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        }
+      </aside>
+    </div>
+  </main>
+</div>
