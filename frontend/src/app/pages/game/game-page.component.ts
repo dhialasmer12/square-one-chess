@@ -85,6 +85,12 @@ export class GamePageComponent implements OnInit, OnDestroy {
 
   private lastEndReason: string | undefined;
   private destroyed = false;
+  /**
+   * FEN of the last half-move fully processed (move list, status, sound).
+   * The server reports one move through up to three channels (socket ack,
+   * `game:state`, `game:moved`); this guard makes sure it is handled once.
+   */
+  private lastHandledFen = '';
 
   private readonly onMoved = (payload: GameMovedPayload) =>
     this.ngZone.run(() => this.handleRemoteMove(payload));
@@ -261,21 +267,76 @@ export class GamePageComponent implements OnInit, OnDestroy {
         ev.to,
         ev.promotion as 'q' | 'r' | 'b' | 'n' | undefined
       );
-      this.patchGame(updated);
-      this.clearMoveSuggestions();
-      await this.refreshAuxiliaryState();
-      void this.sounds.playAfterHalfMove(
-        fenBefore,
-        ev.from,
-        ev.to,
-        ev.promotion,
-        this.chessStatus
-      );
-      this.opponentAway = false;
+      // The socket echo (game:state / game:moved) may already have handled
+      // this exact position; completeHalfMove is a no-op in that case.
+      await this.completeHalfMove(updated, {
+        from: ev.from,
+        to: ev.to,
+        promotion: ev.promotion,
+      });
     } catch {
       this.chessBoard?.setPosition(fenBefore);
     } finally {
       this.moveInFlight = false;
+    }
+  }
+
+  /**
+   * Update session + board from a server snapshot. Visual only: no HTTP, no
+   * sound. Returns true when the position on the board changed.
+   */
+  private applySnapshot(game: GameResponse): boolean {
+    if (!this.session) {
+      return false;
+    }
+    const fenChanged = game.fen !== this.session.game.fen;
+    const statusChanged = game.status !== this.session.game.status;
+    if (!fenChanged && !statusChanged) {
+      return false;
+    }
+    this.patchGame(game);
+    if (fenChanged) {
+      this.clearMoveSuggestions();
+      this.chessBoard?.setPosition(game.fen);
+    }
+    return fenChanged;
+  }
+
+  /**
+   * Full processing of one half-move (once per position): snapshot, move
+   * list + chess status refresh, sound.
+   */
+  private async completeHalfMove(
+    game: GameResponse,
+    move?: { from: string; to: string; promotion?: string }
+  ): Promise<void> {
+    if (!this.session || game.fen === this.lastHandledFen) {
+      return;
+    }
+    const fenBefore = this.lastHandledFen || this.session.game.fen;
+    this.lastHandledFen = game.fen;
+    this.applySnapshot(game);
+    this.opponentAway = false;
+    await this.refreshAuxiliaryState();
+    if (move) {
+      void this.sounds.playAfterHalfMove(
+        fenBefore,
+        move.from,
+        move.to,
+        move.promotion,
+        this.chessStatus
+      );
+      return;
+    }
+    if (!this.replayMode) {
+      void this.sounds.playGenericMove();
+      if (
+        this.chessStatus &&
+        !this.chessStatus.isGameOver &&
+        this.chessStatus.inCheck
+      ) {
+        void this.sounds.playCheck();
+      }
     }
   }
 
@@ -400,6 +461,7 @@ export class GamePageComponent implements OnInit, OnDestroy {
         this.gamePlay.getSession(this.gameId)
       );
       this.session = session;
+      this.lastHandledFen = session.game.fen;
       await this.refreshAuxiliaryState();
       if (this.session.game.status === 'finished') {
         this.gameOver = true;
@@ -423,6 +485,7 @@ export class GamePageComponent implements OnInit, OnDestroy {
     try {
       const joined = await this.gamePlay.joinGame(this.gameId);
       this.session = joined;
+      this.lastHandledFen = joined.game.fen;
       if (joined.game.status === 'finished') {
         this.gameOver = true;
         this.maybeOfferSkillEstimate();
@@ -528,22 +591,11 @@ export class GamePageComponent implements OnInit, OnDestroy {
     if (payload.gameId !== this.gameId || !this.session) {
       return;
     }
-    const fenBefore = this.session.game.fen;
-    this.patchGame(payload.game);
-    void this.refreshAuxiliaryState().then(() => {
-      void this.sounds.playAfterHalfMove(
-        fenBefore,
-        payload.from,
-        payload.to,
-        payload.promotion,
-        this.chessStatus
-      );
+    void this.completeHalfMove(payload.game, {
+      from: payload.from,
+      to: payload.to,
+      promotion: payload.promotion,
     });
-    this.chessBoard?.setPosition(payload.game.fen);
-    this.opponentAway = false;
-    if (payload.game.status === 'finished') {
-      this.gameOver = true;
-    }
   }
 
   private handleGameEnd(payload: GameEndPayload): void {
@@ -566,32 +618,21 @@ export class GamePageComponent implements OnInit, OnDestroy {
     if (payload.id !== this.gameId || !this.session) {
       return;
     }
-    const fenBefore = this.session.game.fen;
-    const fenChanged = fenBefore !== payload.fen;
     const wasFinished = this.session.game.status === 'finished';
-    this.patchGame(payload);
-    this.clearMoveSuggestions();
-    void this.refreshAuxiliaryState().then(() => {
-      if (fenChanged && !this.replayMode) {
-        void this.sounds.playGenericMove();
-        if (
-          this.chessStatus &&
-          !this.chessStatus.isGameOver &&
-          this.chessStatus.inCheck
-        ) {
-          void this.sounds.playCheck();
-        }
-      }
-      if (
-        !this.replayMode &&
-        payload.status === 'finished' &&
-        !wasFinished &&
-        !fenChanged
-      ) {
-        void this.sounds.playGameEnd();
-      }
-    });
-    this.chessBoard?.setPosition(payload.fen);
+    // `game:state` always precedes `game:moved` for the same move: show the
+    // new position right away, but leave the HTTP refresh + sound to
+    // completeHalfMove so each move is processed exactly once.
+    const fenChanged = this.applySnapshot(payload);
+    if (
+      !fenChanged &&
+      !this.replayMode &&
+      payload.status === 'finished' &&
+      !wasFinished
+    ) {
+      // Resign / draw: no new position, but the game ended.
+      void this.refreshAuxiliaryState();
+      void this.sounds.playGameEnd();
+    }
   }
 
   private handleOpponentAway(payload: OpponentAwayPayload): void {
@@ -655,6 +696,7 @@ export class GamePageComponent implements OnInit, OnDestroy {
     try {
       const joined = await this.gamePlay.joinGame(this.gameId);
       this.session = joined;
+      this.lastHandledFen = joined.game.fen;
       await this.refreshAuxiliaryState();
       this.chessBoard?.setPosition(joined.game.fen);
       this.opponentAway = false;

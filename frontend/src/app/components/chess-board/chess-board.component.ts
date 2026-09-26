@@ -139,8 +139,32 @@ export class ChessBoardComponent
       this.logic = new Chess(DEFAULT_START_FEN);
     }
     this.customHighlights = [];
-    this.boardApi?.position?.(this.logic.fen());
+    this.applyBoardPosition(this.logic.fen());
     this.emitBoardSnapshot();
+  }
+
+  /** Piece placement only (first FEN field) — what the board actually draws. */
+  private placementOf(fen: string): string {
+    return fen.trim().split(/\s+/)[0] ?? '';
+  }
+
+  /**
+   * Push a position to Chessboard2 only when the drawn pieces differ.
+   * After the player's own drop the board already shows the new position, so
+   * the server echo (ack / game:state / game:moved) must not touch it again.
+   */
+  private applyBoardPosition(fen: string): void {
+    if (!this.boardApi) {
+      return;
+    }
+    const current = this.boardApi.fen?.();
+    if (
+      typeof current === 'string' &&
+      this.placementOf(current) === this.placementOf(fen)
+    ) {
+      return;
+    }
+    this.boardApi.position?.(fen);
   }
 
   resetBoard(): void {
@@ -224,7 +248,7 @@ export class ChessBoardComponent
   private applyPositionOnly(): void {
     const f = this.safeFen();
     try {
-      this.boardApi?.position?.(f);
+      this.applyBoardPosition(f);
     } catch {
       this.boardApi?.position?.(DEFAULT_START_FEN);
     }
