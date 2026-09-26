@@ -341,7 +341,15 @@ export class GamePageComponent implements OnInit, OnDestroy {
   }
 
   async onSuggestBestMove(): Promise<void> {
-    if (!this.session || this.replayMode || !this.myTurn || this.gameOver) {
+    // Engine hints are a training aid: only available against the bot,
+    // never in a rated user vs user game.
+    if (
+      !this.session ||
+      this.replayMode ||
+      !this.vsBot ||
+      !this.myTurn ||
+      this.gameOver
+    ) {
       return;
     }
     this.suggestBusy = true;
