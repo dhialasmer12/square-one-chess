@@ -1,0 +1,24 @@
+@startuml Seq_Match
+skinparam dpi 300
+skinparam shadowing false
+title Sequence diagram --- Matchmaking
+
+actor PlayerA as A
+actor PlayerB as B
+participant "Lobby\n(Angular A)" as UI_A
+participant "Lobby\n(Angular B)" as UI_B
+participant "Server" as S
+database "SQLite" as DB
+
+A -> UI_A : Join queue
+UI_A -> S : Join matchmaking
+S -> DB : Save queue entry
+B -> UI_B : Join queue
+UI_B -> S : Join matchmaking
+S -> DB : Save queue entry
+S -> DB : Create Game
+S --> UI_A : Match found
+S --> UI_B : Match found
+UI_A --> A : Open /game/:id
+UI_B --> B : Open /game/:id
+@enduml

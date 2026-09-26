@@ -1,0 +1,26 @@
+@startuml UC_Play
+skinparam dpi 200
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #000000
+skinparam actorBorderColor #000000
+skinparam rectangleBorderColor #000000
+skinparam arrowColor #000000
+title Use-case diagram --- Play online games
+
+actor "Player" as P
+
+rectangle "Square One Chess" {
+  usecase "Play online games" as Play
+  usecase "Join matchmaking" as Q
+  usecase "Play against the engine" as Bot
+  usecase "Log in" as L
+}
+
+P -- Play
+P -- Bot
+Play ..> Q : <<include>>
+Play ..> L : <<include>>
+Q ..> L : <<include>>
+Bot ..> L : <<include>>
+
+@enduml

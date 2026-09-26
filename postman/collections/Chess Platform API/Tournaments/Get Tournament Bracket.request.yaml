@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Get Tournament Bracket'
+order: 5000
+method: GET
+url: '{{baseUrl}}/api/tournaments/:tournamentId/bracket'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: tournamentId
+    value: '{{tournamentId}}'

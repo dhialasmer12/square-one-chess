@@ -1,7 +1,12 @@
 @startuml Square_One_Chess_Architecture
-title Diagramme de classes — Architecture applicative
-
+skinparam dpi 200
+hide circle
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
 skinparam packageStyle rectangle
+title Class diagram --- Application architecture
 
 package "Frontend (Angular 17)" {
   class AppComponent

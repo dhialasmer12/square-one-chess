@@ -32,6 +32,27 @@ async function main(): Promise<void> {
     update: {},
   });
 
+  await prisma.user.upsert({
+    where: { email: 'admin@squareone.local' },
+    update: {
+      username: 'Admin',
+      password: defaultPassword,
+      emailVerified: true,
+    },
+    create: {
+      email: 'admin@squareone.local',
+      username: 'Admin',
+      password: defaultPassword,
+      emailVerified: true,
+      elo: 1200,
+      eloBullet: 1200,
+      eloBlitz: 1200,
+      eloRapid: 1200,
+      gamesPlayed: 0,
+      gamesWon: 0,
+    },
+  });
+
   const examples = [
     {
       email: 'alice.martin@univ.edu',
@@ -132,7 +153,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Seeded open-seat user + ${examples.length} players (password: password123).`
+    `Seeded open-seat user + admin@squareone.local + ${examples.length} players (password: password123).`
   );
 
   const puzzleResult = await seedPuzzles(prisma);

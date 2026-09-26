@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Get Game Board'
+order: 7000
+method: GET
+url: '{{baseUrl}}/api/games/:gameId/board'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: gameId
+    value: '{{gameId}}'

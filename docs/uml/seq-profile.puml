@@ -1,0 +1,22 @@
+@startuml Seq_Profile
+skinparam dpi 300
+skinparam shadowing false
+title Sequence diagram --- Manage profile
+
+actor Player
+participant "Profile page\n(Angular)" as UI
+participant "Server" as S
+database "SQLite" as DB
+
+Player -> UI : Opens /profile
+UI -> S : GET /api/auth/me
+S -> DB : Load User
+DB --> S : Profile
+S --> UI : Username, Elo, stats
+Player -> UI : Edits username and saves
+UI -> S : PUT /api/auth/profile
+S -> DB : Update User
+DB --> S : Updated profile
+S --> UI : Confirmation
+UI --> Player : Profile updated
+@enduml

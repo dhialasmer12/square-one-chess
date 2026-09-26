@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Get Game Status'
+order: 11000
+method: GET
+url: '{{baseUrl}}/api/games/:gameId/status'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: gameId
+    value: '{{gameId}}'

@@ -1,0 +1,48 @@
+@startuml Class_Login
+skinparam dpi 200
+hide circle
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
+left to right direction
+title Class diagram --- Log in and manage profile
+
+class LoginPage {
+  +email: String
+  +password: String
+  --
+  +submit()
+}
+class ProfilePage {
+  --
+  +loadProfile()
+  +updateProfile()
+}
+class AuthService {
+  --
+  +loginUser()
+  +logout()
+  +getUserProfile()
+  +updateUserProfile()
+}
+class User {
+  +id: String
+  +email: String
+  +username: String
+  +password: String
+  +emailVerified: Boolean
+  +elo: Int
+}
+class Administrator {
+  --
+  +viewPlatformAnalytics()
+}
+
+User <|-- Administrator
+
+LoginPage "1" --> "1" AuthService : uses
+ProfilePage "1" --> "1" AuthService : uses
+AuthService "1" --> "*" User : authenticates
+
+@enduml

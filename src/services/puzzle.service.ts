@@ -117,11 +117,12 @@ export function fromSquareForSan(fen: string, san: string): string | null {
 
 export async function getRandomPuzzle(
   userId: string,
-  opts: { minRating?: number; maxRating?: number }
+  opts: { minRating?: number; maxRating?: number; theme?: string }
 ): Promise<PuzzlePublicDto> {
   const base = await userBaselineRating(userId);
   const minR = Math.max(300, Math.min(2000, opts.minRating ?? base - 250));
   const maxR = Math.max(minR, Math.min(2000, opts.maxRating ?? base + 250));
+  const theme = opts.theme?.trim().toLowerCase() || undefined;
 
   const solvedIds = await prisma.userPuzzleStats.findMany({
     where: { userId, solved: true },
@@ -132,6 +133,7 @@ export async function getRandomPuzzle(
   const pool = await prisma.puzzle.findMany({
     where: {
       rating: { gte: minR, lte: maxR },
+      ...(theme ? { theme } : {}),
       ...(exclude.length ? { id: { notIn: exclude } } : {}),
     },
     take: 80,
@@ -139,7 +141,10 @@ export async function getRandomPuzzle(
 
   if (!pool.length) {
     const fallback = await prisma.puzzle.findMany({
-      where: exclude.length ? { id: { notIn: exclude } } : {},
+      where: {
+        ...(theme ? { theme } : {}),
+        ...(exclude.length ? { id: { notIn: exclude } } : {}),
+      },
       take: 80,
     });
     if (!fallback.length) {
@@ -149,6 +154,28 @@ export async function getRandomPuzzle(
   }
 
   return toPublicDto(pool[Math.floor(Math.random() * pool.length)]!);
+}
+
+export async function listPuzzleThemes(): Promise<{ theme: string; count: number }[]> {
+  const rows = await prisma.puzzle.groupBy({
+    by: ['theme'],
+    _count: { _all: true },
+    orderBy: { theme: 'asc' },
+  });
+  return rows.map((r) => ({ theme: r.theme, count: r._count._all }));
+}
+
+/** Replay solution plies `[0 .. beforeIndex)` and return the resulting FEN. */
+export function fenAfterLinePrefix(startFen: string, line: string[], beforeIndex: number): string {
+  const g = new Chess(startFen);
+  const n = Math.max(0, Math.min(beforeIndex, line.length));
+  for (let i = 0; i < n; i += 1) {
+    const san = line[i];
+    if (!san || !g.move(san)) {
+      throw new HttpError(500, 'Invalid puzzle solution line — re-run prisma seed');
+    }
+  }
+  return g.fen();
 }
 
 async function pickGlobalPuzzleForUtcDay(day: Date): Promise<Puzzle> {
@@ -225,17 +252,26 @@ export async function getPuzzlesByTheme(
 
 export type SolveResultDto = {
   correct: boolean;
-  /** When false, optional normalized expected SAN (still obscured in UI if you prefer). */
+  /** Full solution finished (all player plies). */
+  solved: boolean;
+  /** When wrong, optional SAN of the expected ply (UI may hide it). */
   expectedSan?: string;
   alreadySolved: boolean;
   attempts: number;
   puzzle: PuzzlePublicDto;
+  /** Board FEN after this ply (+ auto opponent replies). Reset to start on failure. */
+  fen: string;
+  /** Next player ply index into `moves` (0 after a failed try). */
+  lineIndex: number;
+  /** Opponent SANs auto-applied after a correct player move. */
+  opponentSans: string[];
 };
 
 export async function checkAndRecordSolve(
   puzzleId: string,
   userId: string,
-  moveSan: string
+  moveSan: string,
+  lineIndex = 0
 ): Promise<SolveResultDto> {
   const puzzle = await prisma.puzzle.findUnique({ where: { id: puzzleId } });
   if (!puzzle) {
@@ -246,18 +282,36 @@ export async function checkAndRecordSolve(
   }
 
   const line = parsePuzzleMoves(puzzle.moves);
-  const expected = line[0];
-  if (!expected) {
+  if (!line.length) {
     throw new HttpError(500, 'Puzzle has no solution line');
   }
+  if (!Number.isInteger(lineIndex) || lineIndex < 0 || lineIndex >= line.length) {
+    throw new HttpError(400, 'Invalid lineIndex');
+  }
 
-  const proof = new Chess(puzzle.fen);
+  const playerColor = new Chess(puzzle.fen).turn();
+  let currentFen: string;
+  try {
+    currentFen = fenAfterLinePrefix(puzzle.fen, line, lineIndex);
+  } catch (e) {
+    if (e instanceof HttpError) {
+      throw e;
+    }
+    throw new HttpError(500, 'Invalid puzzle solution in database — re-run prisma seed');
+  }
+
+  const expected = line[lineIndex]!;
+  const proof = new Chess(currentFen);
   const proofMove = proof.move(expected);
   if (!proofMove || !fenPlacementHasBothKings(proof.fen())) {
     throw new HttpError(500, 'Invalid puzzle solution in database — re-run prisma seed');
   }
+  // Player should be on move at this index.
+  if (new Chess(currentFen).turn() !== playerColor) {
+    throw new HttpError(400, 'Not a player ply at this lineIndex');
+  }
 
-  const correct = sameMoveOnPosition(puzzle.fen, moveSan, expected);
+  const correct = sameMoveOnPosition(currentFen, moveSan, expected);
 
   const prev = await prisma.userPuzzleStats.findUnique({
     where: { userId_puzzleId: { userId, puzzleId } },
@@ -266,61 +320,136 @@ export async function checkAndRecordSolve(
   if (prev?.solved) {
     return {
       correct: true,
+      solved: true,
       alreadySolved: true,
       attempts: prev.attempts,
       puzzle: toPublicDto(puzzle),
+      fen: puzzle.fen,
+      lineIndex: 0,
+      opponentSans: [],
     };
   }
 
-  const attempts = (prev?.attempts ?? 0) + 1;
-
-  await prisma.$transaction([
-    prisma.puzzle.update({
-      where: { id: puzzleId },
-      data: { tries: { increment: 1 } },
-    }),
-    prisma.userPuzzleStats.upsert({
+  if (!correct) {
+    const attempts = (prev?.attempts ?? 0) + 1;
+    await prisma.$transaction([
+      prisma.puzzle.update({
+        where: { id: puzzleId },
+        data: { tries: { increment: 1 } },
+      }),
+      prisma.userPuzzleStats.upsert({
+        where: { userId_puzzleId: { userId, puzzleId } },
+        create: {
+          userId,
+          puzzleId,
+          solved: false,
+          attempts,
+          solvedAt: null,
+        },
+        update: { attempts },
+      }),
+    ]);
+    const updated = await prisma.puzzle.findUniqueOrThrow({ where: { id: puzzleId } });
+    const st = await prisma.userPuzzleStats.findUniqueOrThrow({
       where: { userId_puzzleId: { userId, puzzleId } },
-      create: {
-        userId,
-        puzzleId,
-        solved: correct,
-        attempts,
-        solvedAt: correct ? new Date() : null,
-      },
-      update: {
-        attempts,
-        solved: correct ? true : undefined,
-        solvedAt: correct ? new Date() : undefined,
-      },
-    }),
-  ]);
-
-  if (correct) {
-    await prisma.puzzle.update({
-      where: { id: puzzleId },
-      data: { successes: { increment: 1 } },
     });
+    const g = new Chess(currentFen);
+    const m = g.move(expected);
+    return {
+      correct: false,
+      solved: false,
+      expectedSan: m ? m.san : normalizeSan(expected),
+      alreadySolved: false,
+      attempts: st.attempts,
+      puzzle: toPublicDto(updated),
+      fen: puzzle.fen,
+      lineIndex: 0,
+      opponentSans: [],
+    };
+  }
+
+  // Correct ply: apply expected + auto-play opponent replies from the line.
+  const live = new Chess(currentFen);
+  live.move(expected);
+  const opponentSans: string[] = [];
+  let nextIndex = lineIndex + 1;
+  while (nextIndex < line.length && live.turn() !== playerColor) {
+    const reply = line[nextIndex]!;
+    const played = live.move(reply);
+    if (!played) {
+      throw new HttpError(500, 'Invalid opponent reply in puzzle line — re-run prisma seed');
+    }
+    opponentSans.push(played.san);
+    nextIndex += 1;
+  }
+
+  const solved = nextIndex >= line.length;
+  const attempts = solved ? (prev?.attempts ?? 0) + 1 : (prev?.attempts ?? 0);
+
+  if (solved) {
+    await prisma.$transaction([
+      prisma.puzzle.update({
+        where: { id: puzzleId },
+        data: { tries: { increment: 1 }, successes: { increment: 1 } },
+      }),
+      prisma.userPuzzleStats.upsert({
+        where: { userId_puzzleId: { userId, puzzleId } },
+        create: {
+          userId,
+          puzzleId,
+          solved: true,
+          attempts: attempts || 1,
+          solvedAt: new Date(),
+        },
+        update: {
+          attempts: attempts || 1,
+          solved: true,
+          solvedAt: new Date(),
+        },
+      }),
+    ]);
   }
 
   const updated = await prisma.puzzle.findUniqueOrThrow({ where: { id: puzzleId } });
-  const st = await prisma.userPuzzleStats.findUniqueOrThrow({
+  const st = await prisma.userPuzzleStats.findUnique({
     where: { userId_puzzleId: { userId, puzzleId } },
   });
 
-  let expectedSanOut: string | undefined;
-  if (!correct) {
-    const g = new Chess(puzzle.fen);
-    const m = g.move(expected);
-    expectedSanOut = m ? m.san : normalizeSan(expected);
-  }
-
   return {
-    correct,
-    expectedSan: expectedSanOut,
+    correct: true,
+    solved,
     alreadySolved: false,
-    attempts: st.attempts,
+    attempts: st?.attempts ?? attempts,
     puzzle: toPublicDto(updated),
+    fen: live.fen(),
+    lineIndex: solved ? nextIndex : nextIndex,
+    opponentSans,
+  };
+}
+
+export async function getHintForPly(
+  puzzleId: string,
+  lineIndex = 0
+): Promise<{ fromSquare: string | null; lineIndex: number }> {
+  const row = await prisma.puzzle.findUnique({ where: { id: puzzleId } });
+  if (!row) {
+    throw new HttpError(404, 'Puzzle not found');
+  }
+  const moves = parsePuzzleMoves(row.moves);
+  if (!moves.length) {
+    throw new HttpError(500, 'Puzzle has no solution');
+  }
+  if (!Number.isInteger(lineIndex) || lineIndex < 0 || lineIndex >= moves.length) {
+    throw new HttpError(400, 'Invalid lineIndex');
+  }
+  const fen = fenAfterLinePrefix(row.fen, moves, lineIndex);
+  const playerColor = new Chess(row.fen).turn();
+  if (new Chess(fen).turn() !== playerColor) {
+    throw new HttpError(400, 'Not a player ply at this lineIndex');
+  }
+  return {
+    fromSquare: fromSquareForSan(fen, moves[lineIndex]!),
+    lineIndex,
   };
 }
 

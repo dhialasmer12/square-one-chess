@@ -144,8 +144,11 @@ export class RegisterComponent {
       })
       .subscribe({
         next: (res) => {
+          this.loading = false;
           if (res.emailVerificationRequired) {
-            void this.router.navigate(['/check-email']);
+            void this.router.navigate(['/check-email'], {
+              queryParams: { email: v.email },
+            });
           } else {
             void this.router.navigate(['/dashboard']);
           }

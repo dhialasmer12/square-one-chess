@@ -1,0 +1,10 @@
+$kind: http-request
+name: Get Active Tournaments
+order: 2000
+method: GET
+url: '{{baseUrl}}/api/tournaments/active'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'

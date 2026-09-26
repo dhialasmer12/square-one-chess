@@ -55,8 +55,9 @@ export class TournamentPageComponent implements OnInit, OnDestroy {
   createOpen = false;
   createName = '';
   createType: 'single_elimination' | 'round_robin' = 'single_elimination';
-  createMax = 8;
+  createMax = 2;
   createBusy = false;
+  startBusy = false;
 
   alertGameId: string | null = null;
   alertTournamentId: string | null = null;
@@ -277,7 +278,7 @@ export class TournamentPageComponent implements OnInit, OnDestroy {
     this.createOpen = true;
     this.createName = '';
     this.createType = 'single_elimination';
-    this.createMax = 8;
+    this.createMax = 2;
     this.actionError = '';
   }
 
@@ -314,18 +315,54 @@ export class TournamentPageComponent implements OnInit, OnDestroy {
   setCreateType(t: 'single_elimination' | 'round_robin'): void {
     this.createType = t;
     if (t === 'single_elimination') {
-      if (![4, 8, 16, 32].includes(this.createMax)) {
-        this.createMax = 8;
+      if (![2, 4, 8, 16, 32].includes(this.createMax)) {
+        this.createMax = 2;
       }
     } else {
       if (this.createMax % 2 !== 0 || this.createMax < 2) {
-        this.createMax = 4;
+        this.createMax = 2;
       }
     }
   }
 
+  canForceStart(t: TournamentListItem): boolean {
+    if (t.status !== 'waiting' || t.createdById !== this.userId) {
+      return false;
+    }
+    const n = t.currentPlayers;
+    if (n < 2) {
+      return false;
+    }
+    if (t.type === 'single_elimination') {
+      return [2, 4, 8, 16, 32].includes(n);
+    }
+    return n % 2 === 0;
+  }
+
+  forceStart(t: TournamentListItem): void {
+    if (!this.canForceStart(t) || this.startBusy) {
+      return;
+    }
+    this.startBusy = true;
+    this.actionError = '';
+    this.api.forceStart(t.id).subscribe({
+      next: (bracket) => {
+        this.startBusy = false;
+        this.bracket = bracket;
+        this.selected = bracket.tournament;
+        this.loadList();
+        this.loadDetail(t.id);
+      },
+      error: (err: { error?: { error?: string } }) => {
+        this.startBusy = false;
+        this.actionError =
+          err.error?.error ?? 'Could not start tournament.';
+      },
+    });
+  }
+
   singleElimSizes(): number[] {
-    return [4, 8, 16, 32];
+    return [2, 4, 8, 16, 32];
   }
 
   roundRobinSizes(): number[] {

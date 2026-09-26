@@ -1,0 +1,21 @@
+$kind: http-request
+name: Play vs Bot
+order: 2000
+method: POST
+url: '{{baseUrl}}/api/games/bot'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "color": "white",
+      "timeControl": "10+0",
+      "difficulty": "medium"
+    }

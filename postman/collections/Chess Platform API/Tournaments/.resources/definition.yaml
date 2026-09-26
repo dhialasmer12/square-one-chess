@@ -1,0 +1,3 @@
+$kind: collection
+name: Tournaments
+description: Tournament creation and management endpoints

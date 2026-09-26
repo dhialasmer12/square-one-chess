@@ -64,6 +64,9 @@ export interface SkillEstimateFactors {
   endgame: SkillTierWord;
   blunders: number;
   mistakes: number;
+  /** 0–100 move accuracy for the analyzed side (makes estimates differ across games). */
+  accuracyPercent: number;
+  movesAnalyzed: number;
 }
 
 export interface SkillEstimateResponse {
@@ -288,6 +291,7 @@ export interface TournamentListItem {
   status: string;
   currentRound: number;
   createdAt: string;
+  createdById: string;
 }
 
 export interface BracketMatchDto {

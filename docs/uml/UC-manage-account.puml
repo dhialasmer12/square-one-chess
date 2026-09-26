@@ -1,0 +1,27 @@
+@startuml UC_Manage_Account
+skinparam dpi 200
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #000000
+skinparam actorBorderColor #000000
+skinparam rectangleBorderColor #000000
+skinparam arrowColor #000000
+title Use-case diagram --- Manage account
+
+actor "Visitor" as V
+actor "Player" as P
+
+rectangle "Square One Chess" {
+  usecase "Log in" as L
+  usecase "Log out" as O
+  usecase "Manage profile" as M
+  usecase "Forgot password" as F
+}
+
+V -- L
+V -- F
+P -- O
+P -- M
+O ..> L : <<include>>
+M ..> L : <<include>>
+
+@enduml

@@ -1,0 +1,17 @@
+$kind: http-request
+name: Get Leaderboard
+order: 1000
+method: GET
+url: '{{baseUrl}}/api/stats/leaderboard'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+queryParams:
+  - key: limit
+    value: '100'
+  - key: period
+    value: all
+  - key: format
+    value: classical

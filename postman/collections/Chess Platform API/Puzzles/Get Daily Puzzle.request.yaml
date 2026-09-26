@@ -1,0 +1,10 @@
+$kind: http-request
+name: Get Daily Puzzle
+order: 1000
+method: GET
+url: '{{baseUrl}}/api/puzzles/daily'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'

@@ -1,0 +1,53 @@
+@startuml Class_Train
+skinparam dpi 200
+hide circle
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
+left to right direction
+title Class diagram --- Training
+
+class PuzzlePage {
+  +lineIndex: Int
+  --
+  +loadDaily()
+  +onBoardMove()
+  +showHint()
+}
+class ReviewPage {
+  --
+  +reviewGame()
+}
+
+class Puzzle {
+  +id: String
+  +fen: String
+  +moves: String
+  +theme: String
+  +rating: Int
+}
+class DailyPuzzle {
+  +date: DateTime
+}
+class UserPuzzleStats {
+  +solved: Boolean
+  +attempts: Int
+  +solvedAt: DateTime
+}
+class Game {
+  +id: String
+  +pgn: String
+  +status: String
+}
+class User {
+  +id: String
+}
+
+PuzzlePage "1" --> "*" Puzzle : solves
+ReviewPage "1" --> "1" Game : analyses
+Puzzle "1" *-- "*" DailyPuzzle : scheduled as
+Puzzle "1" *-- "*" UserPuzzleStats : tracks
+User "1" -- "*" UserPuzzleStats : records
+
+@enduml

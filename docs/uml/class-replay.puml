@@ -1,0 +1,36 @@
+@startuml Class_Replay
+skinparam dpi 200
+hide circle
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
+left to right direction
+title Class diagram --- Replay
+
+class ReplayPage {
+  --
+  +loadMoves()
+  +stepForward()
+}
+class User {
+  +id: String
+  +username: String
+}
+class Game {
+  +id: String
+  +pgn: String
+  +status: String
+}
+class Move {
+  +moveNumber: Int
+  +fromSquare: String
+  +toSquare: String
+  +fen: String
+}
+
+ReplayPage "1" --> "1" Game : replays
+User "1" -- "*" Game : history
+Game "1" *-- "*" Move : contains
+
+@enduml

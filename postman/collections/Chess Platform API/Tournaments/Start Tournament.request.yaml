@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Start Tournament'
+order: 4000
+method: POST
+url: '{{baseUrl}}/api/tournaments/:tournamentId/start'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: tournamentId
+    value: '{{tournamentId}}'

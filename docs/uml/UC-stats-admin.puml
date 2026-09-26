@@ -1,0 +1,27 @@
+@startuml UC_Stats_Admin
+skinparam dpi 200
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #000000
+skinparam actorBorderColor #000000
+skinparam rectangleBorderColor #000000
+skinparam arrowColor #000000
+title Use-case diagram --- Statistics and administration
+
+actor "Player" as P
+actor "Administrator" as A
+
+rectangle "Square One Chess" {
+  usecase "View the leaderboard" as S
+  usecase "View dashboard statistics" as D
+  usecase "View platform analytics" as Ad
+  usecase "Log in" as L
+}
+
+P -- S
+P -- D
+A -- Ad
+S ..> L : <<include>>
+D ..> L : <<include>>
+Ad ..> L : <<include>>
+
+@enduml

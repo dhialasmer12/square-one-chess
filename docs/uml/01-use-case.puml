@@ -1,135 +1,68 @@
 @startuml Square_One_Chess_Use_Cases
+skinparam dpi 160
+skinparam wrapWidth 90
+skinparam maxMessageSize 60
+skinparam nodesep 14
+skinparam ranksep 22
+skinparam linetype polyline
 left to right direction
+hide empty description
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #000000
+skinparam actorBorderColor #000000
+skinparam rectangleBorderColor #000000
+skinparam arrowColor #000000
 skinparam packageStyle rectangle
-skinparam actorStyle awesome
-title Diagramme de cas d'utilisation — Square One Chess
+title Global use-case diagram\nSquare One Chess
 
-actor "Visiteur" as Guest
-actor "Joueur" as Player
-actor "Administrateur" as Admin
-actor "Bot / Moteur\n(chess.js)" as Bot
+actor "Visitor" as Guest
+actor "Player" as Player
 
 rectangle "Square One Chess" {
-
-  package "Authentification" {
-    usecase "S'inscrire" as UC_Register
-    usecase "Se connecter" as UC_Login
-    usecase "Se déconnecter" as UC_Logout
-    usecase "Vérifier l'e-mail" as UC_Verify
-    usecase "Réinitialiser le mot de passe" as UC_ResetPwd
-    usecase "Modifier le profil" as UC_Profile
-  }
-
-  package "Parties & temps réel" {
-    usecase "Créer une partie" as UC_CreateGame
-    usecase "Rejoindre la file\nde matchmaking" as UC_Queue
-    usecase "Jouer une partie\n(coups en direct)" as UC_Play
-    usecase "Proposer / accepter /\nrefuser la nulle" as UC_Draw
-    usecase "Abandonner" as UC_Abandon
-    usecase "Jouer contre le bot" as UC_BotGame
-    usecase "Consulter l'état\nde la partie" as UC_GameStatus
-  }
-
-  package "Historique & analyse" {
-    usecase "Consulter l'historique" as UC_History
-    usecase "Rejouer une partie" as UC_Replay
-    usecase "Revoir une partie (IA)" as UC_Review
-    usecase "Consulter le PGN" as UC_PGN
-  }
-
-  package "Statistiques" {
-    usecase "Consulter le classement" as UC_Leaderboard
-    usecase "Consulter ses statistiques" as UC_Stats
-    usecase "Consulter un profil" as UC_ViewProfile
-  }
-
-  package "Social" {
-    usecase "Envoyer demande d'ami" as UC_FriendReq
-    usecase "Accepter / refuser ami" as UC_FriendResp
-    usecase "Gérer les amis" as UC_Friends
-    usecase "Chatter (global / partie / privé)" as UC_Chat
-  }
-
-  package "Tournois" {
-    usecase "Créer un tournoi" as UC_TourCreate
-    usecase "Rejoindre un tournoi" as UC_TourJoin
-    usecase "Consulter bracket & matchs" as UC_TourBracket
-    usecase "Chatter en tournoi" as UC_TourChat
-  }
-
-  package "Puzzles" {
-    usecase "Puzzle du jour" as UC_PuzzleDaily
-    usecase "Résoudre un puzzle" as UC_PuzzleSolve
-    usecase "Demander un indice" as UC_PuzzleHint
-    usecase "Stats puzzles" as UC_PuzzleStats
-  }
-
-  package "Coaching (IA)" {
-    usecase "Suggestion de coup" as UC_Predict
-    usecase "Estimer le niveau" as UC_Skill
-    usecase "Leçons recommandées" as UC_Lessons
-    usecase "Revue IA d'une partie" as UC_AIReview
-  }
-
-  package "Administration" {
-    usecase "Analytics plateforme" as UC_AnalyticsPlatform
-    usecase "Analytics jeux" as UC_AnalyticsGames
-    usecase "Analytics utilisateur" as UC_AnalyticsUser
-  }
+  usecase "Log in" as UC_Login
+  usecase "Register" as UC_Register
+  usecase "Manage profile" as UC_Profile
+  usecase "Play online games" as UC_Play
+  usecase "View and replay games" as UC_History
+  usecase "Review a finished game" as UC_Review
+  usecase "Solve puzzles" as UC_Puzzles
+  usecase "Take part in tournaments" as UC_Tournament
+  usecase "Manage friends and chat" as UC_Social
+  usecase "View the leaderboard" as UC_Leaderboard
+  usecase "View dashboard statistics" as UC_Stats
+  usecase "View platform analytics" as UC_Admin
 }
 
-Guest --> UC_Register
-Guest --> UC_Login
-Guest --> UC_ResetPwd
-Guest --> UC_Verify
+actor "Administrator" as Admin
 
-Player --> UC_Login
-Player --> UC_Logout
-Player --> UC_Profile
-Player --> UC_Verify
-Player --> UC_CreateGame
-Player --> UC_Queue
-Player --> UC_Play
-Player --> UC_Draw
-Player --> UC_Abandon
-Player --> UC_BotGame
-Player --> UC_GameStatus
-Player --> UC_History
-Player --> UC_Replay
-Player --> UC_Review
-Player --> UC_PGN
-Player --> UC_Leaderboard
-Player --> UC_Stats
-Player --> UC_ViewProfile
-Player --> UC_FriendReq
-Player --> UC_FriendResp
-Player --> UC_Friends
-Player --> UC_Chat
-Player --> UC_TourCreate
-Player --> UC_TourJoin
-Player --> UC_TourBracket
-Player --> UC_TourChat
-Player --> UC_PuzzleDaily
-Player --> UC_PuzzleSolve
-Player --> UC_PuzzleHint
-Player --> UC_PuzzleStats
-Player --> UC_Predict
-Player --> UC_Skill
-Player --> UC_Lessons
-Player --> UC_AIReview
+Guest -- UC_Register
+Guest -- UC_Login
 
-Admin --> UC_AnalyticsPlatform
-Admin --> UC_AnalyticsGames
-Admin --> UC_AnalyticsUser
+Player -- UC_Login
+Player -- UC_Profile
+Player -- UC_Play
+Player -- UC_History
+Player -- UC_Puzzles
+Player -- UC_Review
+Player -- UC_Tournament
+Player -- UC_Social
+Player -- UC_Leaderboard
+Player -- UC_Stats
 
-Bot --> UC_BotGame
-Bot --> UC_Predict
-Bot --> UC_Skill
-Bot --> UC_Lessons
-Bot --> UC_AIReview
+UC_Admin -- Admin
+UC_Login -- Admin
 
-UC_Queue ..> UC_Play : <<include>>
-UC_Play ..> UC_GameStatus : <<include>>
+UC_Profile ..> UC_Login : <<include>>
+UC_Play ..> UC_Login : <<include>>
+UC_History ..> UC_Login : <<include>>
+UC_Puzzles ..> UC_Login : <<include>>
+UC_Review ..> UC_Login : <<include>>
+UC_Tournament ..> UC_Login : <<include>>
+UC_Social ..> UC_Login : <<include>>
+UC_Leaderboard ..> UC_Login : <<include>>
+UC_Stats ..> UC_Login : <<include>>
+UC_Admin ..> UC_Login : <<include>>
+
 UC_Review ..> UC_History : <<extend>>
 
 @enduml

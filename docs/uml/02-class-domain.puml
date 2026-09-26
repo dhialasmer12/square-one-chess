@@ -1,7 +1,12 @@
 @startuml Square_One_Chess_Domain_Classes
-title Diagramme de classes — Modèle métier (Prisma)
-
+skinparam dpi 200
+hide circle
 skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
+left to right direction
+title Class diagram --- Domain model
 
 class User {
   +id: String
@@ -15,137 +20,121 @@ class User {
   +eloRapid: Int
   +gamesPlayed: Int
   +gamesWon: Int
-  +winStreak: Int
-  +createdAt: DateTime
+}
+class Administrator {
+  --
+  +viewPlatformAnalytics()
 }
 
-class Game {
+abstract class Game {
   +id: String
-  +whitePlayerId: String
-  +blackPlayerId: String
   +status: String
   +fen: String
-  +pgn: String?
+  +pgn: String
   +timeControl: String
-  +botDifficulty: String?
-  +winner: String?
-  +startedAt: DateTime
-  +endedAt: DateTime?
 }
-
+class OnlineGame {
+}
+class BotGame {
+  +botDifficulty: String
+}
 class Move {
-  +id: String
-  +gameId: String
   +moveNumber: Int
   +fromSquare: String
   +toSquare: String
-  +piece: String
-  +promotion: String?
   +fen: String
-  +timestamp: DateTime
 }
-
 class QueueEntry {
-  +id: String
-  +userId: String
   +elo: Int
   +joinedAt: DateTime
 }
-
 class Friend {
-  +id: String
-  +userId: String
-  +friendId: String
   +status: String
-  +createdAt: DateTime
 }
 
-class ChatMessage {
-  +id: String
-  +fromUserId: String
-  +toUserId: String?
+abstract class ChatMessage {
   +roomId: String
   +content: String
-  +type: String
-  +createdAt: DateTime
+}
+class PrivateMessage {
+}
+class GameMessage {
+}
+class GlobalMessage {
 }
 
-class Tournament {
-  +id: String
+abstract class Tournament {
   +name: String
   +type: String
   +maxPlayers: Int
   +status: String
   +currentRound: Int
-  +createdById: String?
 }
-
+class SingleElimination {
+  {static} +ALLOWED_SIZES: 2 | 4 | 8 | 16 | 32
+  --
+  +pairFirstRound()
+  +advanceWinners()
+}
+class RoundRobin {
+  {static} +PLAYER_COUNT: even, 2..16
+  --
+  +buildFullSchedule()
+  +activateNextRound()
+}
 class TournamentRegistration {
-  +id: String
-  +userId: String
-  +tournamentId: String
   +joinDate: DateTime
 }
-
 class TournamentMatch {
-  +id: String
-  +tournamentId: String
   +round: Int
-  +whitePlayerId: String
-  +blackPlayerId: String
-  +winnerId: String?
-  +gameId: String?
+  +matchIndex: Int
   +status: String
 }
-
 class TournamentMessage {
-  +id: String
-  +tournamentId: String
-  +userId: String
   +body: String
 }
 
 class Puzzle {
-  +id: String
   +fen: String
   +moves: String
   +theme: String
   +rating: Int
-  +tries: Int
-  +successes: Int
 }
-
 class DailyPuzzle {
-  +id: String
-  +puzzleId: String
   +date: DateTime
 }
-
 class UserPuzzleStats {
-  +userId: String
-  +puzzleId: String
   +solved: Boolean
   +attempts: Int
-  +solvedAt: DateTime?
 }
 
-User "1" -- "0..*" Game : joue (blanc)
-User "1" -- "0..*" Game : joue (noir)
-Game "1" *-- "0..*" Move : contient
-User "1" -- "0..*" QueueEntry
-User "1" -- "0..*" Friend : initie
-User "1" -- "0..*" Friend : reçoit
-User "1" -- "0..*" ChatMessage : envoie
-User "1" -- "0..*" ChatMessage : reçoit
+User <|-- Administrator
+Game <|-- OnlineGame
+Game <|-- BotGame
+ChatMessage <|-- PrivateMessage
+ChatMessage <|-- GameMessage
+ChatMessage <|-- GlobalMessage
+Tournament <|-- SingleElimination
+Tournament <|-- RoundRobin
 
-Tournament "1" -- "0..*" TournamentRegistration
-User "1" -- "0..*" TournamentRegistration
-Tournament "1" -- "0..*" TournamentMatch
-TournamentMatch "0..1" -- "0..1" Game
-Tournament "1" -- "0..*" TournamentMessage
-User "1" -- "0..*" TournamentMessage
-
-Puzzle "1" -- "0..*" DailyPuzzle
-Puzzle "1" -- "0..*" UserPuzzleStats
+User "1" -- "*" OnlineGame : white
+User "1" -- "*" OnlineGame : black
+User "1" -- "*" BotGame : plays
+Game "1" *-- "*" Move : contains
+User "1" *-- "*" QueueEntry : queued as
+User "1" -- "*" Friend : sent
+User "1" -- "*" Friend : received
+User "1" -- "*" ChatMessage : sent
+User "1" -- "*" PrivateMessage : received
+User "1" -- "*" Tournament : creates
+Tournament "1" *-- "*" TournamentRegistration : has
+User "1" -- "*" TournamentRegistration : joins
+Tournament "1" *-- "*" TournamentMatch : has
+Tournament "1" *-- "*" TournamentMessage : has
+User "1" -- "*" TournamentMessage : sent
+TournamentMatch "0..1" -- "0..1" Game : played as
+Puzzle "1" *-- "*" DailyPuzzle : scheduled as
+Puzzle "1" *-- "*" UserPuzzleStats : tracks
+User "1" -- "*" UserPuzzleStats : records
 
 @enduml

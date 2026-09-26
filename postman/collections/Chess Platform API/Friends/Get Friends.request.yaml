@@ -1,0 +1,10 @@
+$kind: http-request
+name: Get Friends
+order: 3000
+method: GET
+url: '{{baseUrl}}/api/friends/'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'

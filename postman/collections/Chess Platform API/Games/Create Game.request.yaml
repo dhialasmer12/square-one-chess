@@ -1,0 +1,21 @@
+$kind: http-request
+name: Create Game
+order: 1000
+method: POST
+url: '{{baseUrl}}/api/games/create'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "whitePlayerId": "{{userId}}",
+      "blackPlayerId": "{{opponentId}}",
+      "timeControl": "10+0"
+    }

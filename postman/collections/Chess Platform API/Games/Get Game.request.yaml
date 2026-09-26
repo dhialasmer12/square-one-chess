@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Get Game'
+order: 14000
+method: GET
+url: '{{baseUrl}}/api/games/:gameId'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: gameId
+    value: '{{gameId}}'

@@ -1,0 +1,737 @@
+% !TEX program = pdflatex
+% Cahier des charges --- Square One Chess (PFE)
+% Compile with pdfLaTeX (twice if you add a TOC later).
+% Place this file in docs/ (same folder as logos if you include them).
+% =============================================================================
+\documentclass[12pt,a4paper,oneside]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\frenchsetup{AutoSpacePunctuation=false}
+\usepackage{lmodern}
+\usepackage[a4paper,left=2.5cm,right=2.5cm,top=2.2cm,bottom=2.2cm]{geometry}
+\usepackage{scrextend}
+\changefontsizes[20pt]{13pt}
+\usepackage{graphicx}
+\graphicspath{{logos/}{./logos/}{./}}
+\usepackage{setspace}
+\usepackage[table]{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{caption}
+
+\definecolor{chapterblue}{RGB}{31,72,124}
+\definecolor{sectionblue}{RGB}{0,111,192}
+\definecolor{subsectionblue}{RGB}{68,113,196}
+\definecolor{toclink}{RGB}{0,0,127}
+\definecolor{codebg}{RGB}{245,245,245}
+
+\hypersetup{colorlinks=true,linkcolor=toclink,urlcolor=toclink}
+
+\setstretch{1.2}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45em}
+\setlist[itemize]{leftmargin=1.4em,itemsep=0.25em,topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.4em,itemsep=0.25em,topsep=0.3em}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{sectionblue}}
+  {\thesection}{0.8em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{subsectionblue}}
+  {\thesubsection}{0.8em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{chapterblue}}
+  {\thesubsubsection}{0.8em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize Cahier des charges --- Square One Chess}
+\fancyhead[R]{\footnotesize PFE 2025--2026}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\setlength{\headheight}{14pt}
+
+\newcommand{\StudentName}{Lasmer Dhia Eddin}
+\newcommand{\SupervisorName}{M. Aziz Thraya}
+\newcommand{\AcademicSupervisor}{M. Hmida Hmida}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  breaklines=true,
+  columns=fullflexible
+}
+
+\begin{document}
+
+% ---------------------------------------------------------------------------
+% Page de titre
+% ---------------------------------------------------------------------------
+\begin{titlepage}
+\centering
+\vspace*{1cm}
+
+{\Large\bfseries Université de Jendouba}\\[0.3em]
+{\large Institut Supérieur d'Informatique du Kef (ISI Kef)}\\[1.2em]
+
+{\color{sectionblue}\rule{\textwidth}{1.2pt}}\\[0.8em]
+{\LARGE\bfseries\color{chapterblue} Cahier des charges}\\[0.5em]
+{\Large\bfseries Square One Chess}\\[0.3em]
+{\large Plateforme web d'échecs en temps réel}\\[0.8em]
+{\color{sectionblue}\rule{\textwidth}{1.2pt}}\\[1.2em]
+
+\begin{tabular}{>{\bfseries}l@{\hspace{1em}}p{0.62\textwidth}}
+Projet & Projet de fin d'études (PFE) \\[0.35em]
+Organisme d'accueil & NCIS (Network and Computer Integration Services), Tunis \\[0.35em]
+Étudiant & \StudentName \\[0.35em]
+Encadrant industriel & \SupervisorName \\[0.35em]
+Encadrant académique & \AcademicSupervisor \\[0.35em]
+Version & 1.0 \\
+\end{tabular}
+
+\vfill
+{\large Année universitaire 2025--2026}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ---------------------------------------------------------------------------
+\section{Introduction}
+% ---------------------------------------------------------------------------
+
+\subsection{Objet du document}
+Ce document décrit ce que nous devons réaliser pour le projet \textbf{Square One Chess}.
+Il précise le besoin, ce qui est dans le périmètre, les exigences (fonctionnelles et non fonctionnelles), les contraintes techniques et les livrables attendus pour le PFE.
+
+\subsection{Contexte}
+Aujourd'hui, beaucoup de joueurs d'échecs utilisent plusieurs outils en même temps:
+un site pour jouer, un groupe de discussion pour organiser une partie, un fichier Excel pour noter les résultats, et parfois un autre site pour les puzzles.
+Cela complique le suivi du niveau (Elo), de l'historique des parties et de la vie d'un club ou d'une communauté étudiante.
+
+Ce projet a été mené durant un stage à \textbf{NCIS}, une entreprise tunisienne spécialisée dans les services informatiques et le développement d'applications web.
+
+\subsection{Présentation du projet}
+\textbf{Square One Chess} est une application web complète (frontend + backend) qui permet:
+\begin{itemize}
+  \item de créer un compte et de se connecter de manière sécurisée;
+  \item de jouer en ligne contre un autre joueur ou contre un moteur d'échecs;
+  \item de voir l'historique des parties et de les rejouer;
+  \item de s'entraîner avec des puzzles et une revue de partie assistée par l'IA;
+  \item de participer à des tournois;
+  \item d'ajouter des amis et de discuter via un chat;
+  \item de consulter le classement, les statistiques, et (pour un administrateur) les analytics de la plateforme.
+\end{itemize}
+
+\subsection{Objectifs}
+\begin{table}[H]
+\centering
+\caption{Objectifs du projet}
+\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{Type} & \textcolor{white}{\textbf{Objectif}} \\
+\hline
+Métier & Réunir sur une seule plateforme le jeu, la communauté, les tournois et l'entraînement. \\
+\hline
+Technique & Mettre en place une architecture claire: interface Angular, API Express et communication temps réel. \\
+\hline
+Pédagogique & Appliquer Scrum, UML, la sécurité web et le développement TypeScript côté client et serveur. \\
+\hline
+Qualité & Préparer une démonstration stable et une documentation complète pour la soutenance. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Périmètre}
+
+\subsubsection{Ce qui est inclus}
+\begin{itemize}
+  \item Compte utilisateur: inscription, connexion, session sécurisée (cookie HttpOnly JWT), profil, et selon la configuration: vérification d'e-mail / mot de passe oublié.
+  \item Jeu en ligne: lobby, file d'attente, parties en direct (Socket.io), horloge, abandon et nulle.
+  \item Partie contre le moteur Stockfish.
+  \item Historique, relecture (replay) et revue IA d'une partie terminée.
+  \item Puzzles tactiques (quotidien, aléatoire, par thème, plusieurs coups).
+  \item Tournois: création, inscription, démarrage, tableau (bracket) et chat.
+  \item Amis, présence en ligne et chat.
+  \item Classement Elo et statistiques sur le tableau de bord.
+  \item Analytics administrateur.
+  \item Documentation UML et rapport de projet.
+\end{itemize}
+
+\subsubsection{Ce qui n'est pas demandé pour ce PFE}
+\begin{itemize}
+  \item Application mobile native.
+  \item Mode spectateur pour regarder une partie en direct.
+  \item Défi entre amis / rematch avancé.
+  \item Import de parties PGN externes.
+  \item Mise en production à grande échelle (Postgres, Redis, plusieurs serveurs).
+  \item Système de modération avancé (signalements, sanctions automatiques).
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Étude de l'existant et critique}
+% ---------------------------------------------------------------------------
+
+\subsection{Situation actuelle}
+Les joueurs amateurs passent souvent d'un outil à l'autre.
+Le suivi du classement, la conservation des parties et l'organisation d'une petite communauté restent difficiles sans plateforme dédiée.
+
+\subsection{Limites}
+\begin{itemize}
+  \item Il n'y a pas une seule application qui couvre le compte, le jeu et l'entraînement.
+  \item L'appariement et le contrôle du temps sont peu fiables si tout se fait par messagerie.
+  \item Beaucoup de parties sont perdues: difficile de les revoir ensuite.
+  \item Le chat et le plateau de jeu ne sont pas liés.
+  \item Les tournois sont souvent gérés à la main, avec des risques d'erreurs.
+  \item La sécurité des comptes et les rôles (joueur / admin) ne sont pas toujours clairs.
+\end{itemize}
+
+\subsection{Solution proposée}
+Nous proposons de développer \textbf{Square One}, une plateforme web d'échecs en temps réel.
+Elle regroupe l'authentification, le jeu en live, le matchmaking, l'historique, le social, les tournois, les puzzles, la revue IA, les statistiques et un espace analytics pour l'administrateur.
+
+% ---------------------------------------------------------------------------
+\section{Acteurs du système}
+% ---------------------------------------------------------------------------
+
+\begin{table}[H]
+\centering
+\caption{Acteurs et interactions}
+\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|X|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{Acteur} & \textcolor{white}{\textbf{Description}} & \textcolor{white}{\textbf{Interactions principales}} \\
+\hline
+Visiteur & Personne qui n'est pas encore connectée & S'inscrire, se connecter \\
+\hline
+Joueur & Utilisateur connecté & Jouer, s'entraîner, discuter, rejoindre un tournoi, voir ses stats, gérer son profil \\
+\hline
+Administrateur & Joueur autorisé (liste d'e-mails / identifiants, ou mode démo) & Voir les analytics de la plateforme sur le dashboard \\
+\hline
+\end{tabularx}
+\end{table}
+
+\noindent\textit{Remarque.} Dans l'application, il n'y a pas de page publique pour « parcourir la plateforme » sans compte.
+Après connexion, l'utilisateur arrive sur le dashboard.
+
+% ---------------------------------------------------------------------------
+\section{Exigences fonctionnelles}
+% ---------------------------------------------------------------------------
+
+Les exigences ci-dessous décrivent ce que l'application doit vraiment faire.
+
+\subsection{Compte et sécurité}
+\begin{table}[H]
+\centering
+\caption{Exigences --- compte et sécurité}
+\small
+\begin{tabularx}{\linewidth}{|c|X|c|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{\textbf{ID}} & \textcolor{white}{\textbf{Exigence}} & \textcolor{white}{\textbf{Priorité}} \\
+\hline
+EF-01 & Le système permet à un visiteur de s'inscrire (pseudo, e-mail, mot de passe). & Obligatoire \\
+\hline
+EF-02 & Les mots de passe sont stockés sous forme de hash (bcrypt), jamais en clair. & Obligatoire \\
+\hline
+EF-03 & Le système permet de se connecter et d'ouvrir une session via cookie HttpOnly JWT. & Obligatoire \\
+\hline
+EF-04 & Les routes privées exigent une session valide (\texttt{authGuard} / middleware). & Obligatoire \\
+\hline
+EF-05 & Le joueur peut consulter et modifier son profil (ex.\ pseudo). & Obligatoire \\
+\hline
+EF-06 & Le joueur peut se déconnecter (invalidation du cookie). & Obligatoire \\
+\hline
+EF-07 & Vérification d'e-mail et réinitialisation du mot de passe (selon SMTP / variables d'environnement). & Souhaitable \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Parties en ligne}
+\begin{table}[H]
+\centering
+\caption{Exigences --- parties en ligne}
+\small
+\begin{tabularx}{\linewidth}{|c|X|c|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{\textbf{ID}} & \textcolor{white}{\textbf{Exigence}} & \textcolor{white}{\textbf{Priorité}} \\
+\hline
+EF-10 & Le joueur peut rejoindre une file d'attente (contrôle du temps) via Socket.io. & Obligatoire \\
+\hline
+EF-11 & Le système apparie deux joueurs et crée une partie (\texttt{match:found}). & Obligatoire \\
+\hline
+EF-12 & Les coups sont validés côté serveur (\texttt{chess.js}) et diffusés en temps réel. & Obligatoire \\
+\hline
+EF-13 & Une partie gère horloge, abandon, nulle, fin de partie et mise à jour Elo. & Obligatoire \\
+\hline
+EF-14 & Le joueur peut lancer une partie contre le moteur (difficulté configurable). & Obligatoire \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Historique et relecture}
+\begin{table}[H]
+\centering
+\caption{Exigences --- historique et relecture}
+\small
+\begin{tabularx}{\linewidth}{|c|X|c|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{\textbf{ID}} & \textcolor{white}{\textbf{Exigence}} & \textcolor{white}{\textbf{Priorité}} \\
+\hline
+EF-20 & Le joueur consulte la liste de ses parties terminées. & Obligatoire \\
+\hline
+EF-21 & Le joueur rejoue une partie coup par coup à partir des coups stockés. & Obligatoire \\
+\hline
+EF-22 & Le système peut fournir le PGN / détail d'une partie via l'API. & Souhaitable \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Entraînement}
+\begin{table}[H]
+\centering
+\caption{Exigences --- entraînement}
+\small
+\begin{tabularx}{\linewidth}{|c|X|c|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{\textbf{ID}} & \textcolor{white}{\textbf{Exigence}} & \textcolor{white}{\textbf{Priorité}} \\
+\hline
+EF-30 & Le joueur résout des puzzles (quotidien, aléatoire, filtre par thème). & Obligatoire \\
+\hline
+EF-31 & Résolution multi-coups : coup joueur $\rightarrow$ réponse adverse auto $\rightarrow$ coup suivant ; échec = reset. & Obligatoire \\
+\hline
+EF-32 & L'API puzzle ne révèle pas la ligne solution au chargement ; l'indice indique la case de départ. & Obligatoire \\
+\hline
+EF-33 & Les tentatives / réussites sont enregistrées (\texttt{UserPuzzleStats}). & Obligatoire \\
+\hline
+EF-34 & Le joueur peut ouvrir une revue IA d'une partie terminée (Stockfish / service AI). & Obligatoire \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Tournois}
+\begin{table}[H]
+\centering
+\caption{Exigences --- tournois}
+\small
+\begin{tabularx}{\linewidth}{|c|X|c|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{\textbf{ID}} & \textcolor{white}{\textbf{Exigence}} & \textcolor{white}{\textbf{Priorité}} \\
+\hline
+EF-40 & Un joueur peut créer et rejoindre un tournoi. & Obligatoire \\
+\hline
+EF-41 & Le créateur peut démarrer le tournoi (si assez de joueurs). & Obligatoire \\
+\hline
+EF-42 & Le système gère inscriptions, matchs, bracket et résultats liés aux parties. & Obligatoire \\
+\hline
+EF-43 & Un chat de tournoi est disponible. & Souhaitable \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Social}
+\begin{table}[H]
+\centering
+\caption{Exigences --- social}
+\small
+\begin{tabularx}{\linewidth}{|c|X|c|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{\textbf{ID}} & \textcolor{white}{\textbf{Exigence}} & \textcolor{white}{\textbf{Priorité}} \\
+\hline
+EF-50 & Le joueur gère des demandes d'amis (envoyer, accepter, lister). & Obligatoire \\
+\hline
+EF-51 & Le joueur communique via chat (global / privé / partie) avec persistance des messages. & Obligatoire \\
+\hline
+EF-52 & Le système indique la présence en ligne des amis. & Souhaitable \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Statistiques et administration}
+\begin{table}[H]
+\centering
+\caption{Exigences --- statistiques et administration}
+\small
+\begin{tabularx}{\linewidth}{|c|X|c|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{\textbf{ID}} & \textcolor{white}{\textbf{Exigence}} & \textcolor{white}{\textbf{Priorité}} \\
+\hline
+EF-60 & Le joueur consulte le classement (Elo, formats bullet/blitz/rapid selon API). & Obligatoire \\
+\hline
+EF-61 & Le joueur consulte ses statistiques sur le dashboard. & Obligatoire \\
+\hline
+EF-62 & L'administrateur consulte des analytics plateforme (utilisateurs, volume de parties, etc.). & Obligatoire \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\section{Exigences non fonctionnelles}
+% ---------------------------------------------------------------------------
+
+\begin{table}[H]
+\centering
+\caption{Exigences non fonctionnelles}
+\small
+\begin{tabularx}{\linewidth}{|c|>{\bfseries}l|X|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{\textbf{ID}} & \textcolor{white}{\textbf{Catégorie}} & \textcolor{white}{\textbf{Exigence}} \\
+\hline
+ENF-01 & Sécurité & JWT en cookie HttpOnly ; pas de token en \texttt{localStorage} ; CORS avec credentials ; validation des coups côté serveur. \\
+\hline
+ENF-02 & Performance & Temps de réponse API acceptable en démo locale ; parties live sans rafraîchir la page. \\
+\hline
+ENF-03 & Disponibilité & Application utilisable en local pour la soutenance (API + front démarrés). \\
+\hline
+ENF-04 & Ergonomie & Interface web responsive (Angular + Tailwind), parcours clairs. \\
+\hline
+ENF-05 & Maintenabilité & Code TypeScript modulaire (routes $\rightarrow$ controllers $\rightarrow$ services $\rightarrow$ Prisma). \\
+\hline
+ENF-06 & Portabilité & Développement Windows ; stack Node.js ; base SQLite fichier. \\
+\hline
+ENF-07 & Capacité & Dimensionnement démo : dizaines d'utilisateurs simultanés (SQLite + un process Node) --- limite assumée. \\
+\hline
+ENF-08 & Traçabilité & Diagrammes UML alignés sur l'implémentation. \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\section{Contraintes}
+% ---------------------------------------------------------------------------
+
+\subsection{Techniques}
+\begin{table}[H]
+\centering
+\caption{Contraintes techniques}
+\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{Élément} & \textcolor{white}{\textbf{Choix}} \\
+\hline
+Frontend & Angular 17 (SPA), TypeScript, Tailwind, chess.js, Socket.io-client, Chart.js \\
+\hline
+Backend & Node.js, Express, TypeScript, Socket.io \\
+\hline
+Persistance & Prisma + SQLite \\
+\hline
+Moteur & Stockfish (npm) \\
+\hline
+Auth & JWT + cookie HttpOnly, bcrypt \\
+\hline
+E-mail & Nodemailer (optionnel selon SMTP) \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Organisationnelles}
+\begin{itemize}
+  \item Méthode : \textbf{Scrum} (backlog, sprints, incréments démo).
+  \item Durée : stage / PFE selon calendrier ISI Kef et NCIS.
+  \item Encadrement : \SupervisorName\ (PO / Scrum Master côté entreprise).
+\end{itemize}
+
+\subsection{Juridiques / éthiques}
+\begin{itemize}
+  \item Pas de stockage de mots de passe en clair.
+  \item Respect de la vie privée des comptes de démonstration.
+  \item Cohérence entre le code, la documentation et le rapport de stage.
+\end{itemize}
+
+\clearpage
+% ---------------------------------------------------------------------------
+\section{Architecture cible}
+% ---------------------------------------------------------------------------
+
+\noindent L'architecture de \textbf{Square One} tient sur une seule vue: le client Angular parle au serveur Node (REST + Socket.io), puis les services utilisent SQLite, Stockfish et éventuellement l'e-mail.
+
+\begin{figure}[H]
+\centering
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{|c|}
+\hline
+\rowcolor{sectionblue!12}
+\textbf{Client (navigateur)} \\
+Angular 17 + Tailwind + chess.js + Socket.io-client \\
+{\footnotesize Port 4200 --- proxy \texttt{/api} et \texttt{/socket.io} en développement} \\
+\hline
+\multicolumn{1}{c}{$\big\downarrow$ \footnotesize HTTP JSON + cookie JWT \quad|\quad Socket.io (coups, file, chat)} \\
+\hline
+\rowcolor{sectionblue!12}
+\textbf{Serveur Node.js} \\
+Express (REST \texttt{/api/*}) \quad+\quad Socket.io (temps réel) \\
+{\footnotesize Port 3000 --- Auth JWT dans cookie HttpOnly} \\
+\hline
+\multicolumn{1}{c}{$\big\downarrow$} \\
+\hline
+\rowcolor{sectionblue!12}
+\textbf{Services métier} \\
+Auth \quad Game \quad Puzzle \quad Tournament \quad Stats \quad Social \quad AI \\
+\hline
+\multicolumn{1}{c}{$\big\downarrow$} \\
+\end{tabular}
+
+\vspace{0.4em}
+\begin{tabular}{|c|c|c|}
+\hline
+\rowcolor{sectionblue!8}
+\textbf{SQLite} & \textbf{Stockfish} & \textbf{Nodemailer} \\
+via Prisma ORM & bot / analyse & e-mail (optionnel) \\
+\hline
+\end{tabular}
+\caption{Architecture de Square One Chess (vue d'ensemble)}
+\label{fig:arch-cahier}
+\end{figure}
+
+\noindent\textbf{Point important:} le serveur décide si un coup est légal et si la session est valide.
+Le frontend affiche le jeu, mais ce n'est pas lui qui fait autorité sur les règles.
+
+\noindent\textbf{Flux principaux (sur la même page):}
+\begin{itemize}
+  \item \textbf{REST} (\texttt{/api/...}): inscription, connexion, profil, puzzles, tournois, historique, classement.
+  \item \textbf{Socket.io}: file d'attente, coups en live, chat et présence.
+  \item \textbf{Base SQLite}: utilisateurs, parties, coups, puzzles, tournois, messages.
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Cas d'utilisation (synthèse)}
+% ---------------------------------------------------------------------------
+
+Le diagramme global des cas d'utilisation (\texttt{docs/uml/01-use-case.puml} / \texttt{fig-usecase-global.png}) résume les interactions suivantes:
+
+\begin{table}[H]
+\centering
+\caption{Synthèse des cas d'utilisation}
+\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{Acteur} & \textcolor{white}{\textbf{Cas d'utilisation}} \\
+\hline
+Visiteur & S'inscrire ; Se connecter \\
+\hline
+Joueur & Gérer le profil ; Jouer en ligne ; Historique et replay ; Résoudre des puzzles ; Revue d'une partie ; Tournois ; Amis et chat ; Classement ; Statistiques dashboard \\
+\hline
+Administrateur & Analytics plateforme \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\section{Backlog produit (extrait)}
+% ---------------------------------------------------------------------------
+
+Référence complète : \texttt{docs/BACKLOG.md} et \texttt{docs/SPRINT-PLANNING.md}.
+
+\begin{table}[H]
+\centering
+\caption{Epics et user stories (extrait)}
+\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{Epic} & \textcolor{white}{\textbf{Exemples d'user stories}} \\
+\hline
+E1 Compte \& sécurité & US-01 à US-05 \\
+\hline
+E2 Parties en ligne & US-10 à US-14 \\
+\hline
+E3 Historique \& replay & US-20, US-21 \\
+\hline
+E4 Stats \& classement & US-30, US-31 \\
+\hline
+E5 Social & US-40 à US-42 \\
+\hline
+E6 Tournois & US-50, US-51 \\
+\hline
+E7 Puzzles & US-60, US-61 \\
+\hline
+E8 Coaching IA & US-70 \\
+\hline
+E9 Administration & US-80 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\noindent Priorisation: P1 = indispensable pour la démo; P2 = important; P3 = amélioration plus tard.
+
+% ---------------------------------------------------------------------------
+\section{Critères d'acceptation (recette)}
+% ---------------------------------------------------------------------------
+
+Le projet est prêt pour la soutenance si:
+\begin{enumerate}
+  \item Inscription + connexion fonctionnent et mènent au dashboard (cookie session).
+  \item Une partie PvP ou vs bot peut être jouée en live (coups validés, fin de partie).
+  \item L'historique et le replay d'une partie terminée fonctionnent.
+  \item Au moins un puzzle peut être résolu (y compris ligne multi-coups si proposée).
+  \item Classement ou statistiques dashboard accessibles.
+  \item Tournoi : création / inscription / démarrage démontrable avec 2 joueurs.
+  \item Chat ou amis utilisable depuis l'interface.
+  \item Les diagrammes du rapport correspondent aux fonctionnalités livrées.
+  \item Le code démarre en local (API \texttt{:3000}, front \texttt{:4200} avec proxy).
+\end{enumerate}
+
+% ---------------------------------------------------------------------------
+\section{Livrables}
+% ---------------------------------------------------------------------------
+
+\begin{table}[H]
+\centering
+\caption{Livrables du projet}
+\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{Livrable} & \textcolor{white}{\textbf{Description}} \\
+\hline
+Code source & Backend + frontend TypeScript (dépôt Git) \\
+\hline
+Base de données & Schéma Prisma + seed (utilisateurs démo, puzzles) \\
+\hline
+Documentation technique & README, UML, guides (\texttt{docs/}) \\
+\hline
+Rapport PFE & Document Latex (\texttt{docs/page-de-garde.tex} et suite) \\
+\hline
+Cahier des charges & Le présent document \\
+\hline
+Démo & Scénario de présentation 8--10 min \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\section{Planning indicatif (releases)}
+% ---------------------------------------------------------------------------
+
+\begin{table}[H]
+\centering
+\caption{Releases}
+\begin{tabularx}{\linewidth}{|>{\bfseries}c|X|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{Release} & \textcolor{white}{\textbf{Contenu}} \\
+\hline
+R1 & Compte, auth cookie, profil \\
+\hline
+R2 & Lobby, matchmaking, parties live, historique, replay \\
+\hline
+R3 & Social, tournois, puzzles, revue IA, leaderboard, analytics admin \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\section{Risques et hypothèses}
+% ---------------------------------------------------------------------------
+
+\begin{table}[H]
+\centering
+\caption{Risques et mitigations}
+\small
+\begin{tabularx}{\linewidth}{|X|X|X|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{\textbf{Risque}} & \textcolor{white}{\textbf{Impact}} & \textcolor{white}{\textbf{Mitigation}} \\
+\hline
+Cookie bloqué (\texttt{localhost} $\neq$ \texttt{127.0.0.1}) & Impossible de rester connecté & Proxy Angular same-origin ; URL \texttt{http://localhost:4200} \\
+\hline
+SQLite sous charge & Verrous / lenteur & Limiter la démo ; évoquer Postgres en perspectives \\
+\hline
+Stockfish CPU & Bot / revue lents & Profondeur limitée en démo \\
+\hline
+SMTP absent & Vérification e-mail & Auto-verify en développement \\
+\hline
+Puzzles de mauvaise qualité & Démo peu crédible & Seed validé par \texttt{chess.js} \\
+\hline
+\end{tabularx}
+\end{table}
+
+\noindent\textbf{Hypothèses:} on fait la démo en local, avec deux comptes de test prêts, et le jury ouvre l'application dans un navigateur.
+
+% ---------------------------------------------------------------------------
+\section{Perspectives (hors cahier initial)}
+% ---------------------------------------------------------------------------
+
+\begin{itemize}
+  \item Migration PostgreSQL + Redis adapter Socket.io.
+  \item Import massif de puzzles (ex.\ dump Lichess filtré).
+  \item Mode spectateur, défi ami, notifications.
+  \item Application mobile ou PWA.
+  \item Tests automatisés (e2e) et CI/CD.
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Glossaire}
+% ---------------------------------------------------------------------------
+
+\begin{table}[H]
+\centering
+\caption{Glossaire}
+\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{Terme} & \textcolor{white}{\textbf{Définition}} \\
+\hline
+FEN & Notation d'une position d'échiquier \\
+\hline
+SAN & Notation algébrique d'un coup (\texttt{Nf3}, \texttt{O-O}\ldots) \\
+\hline
+JWT & Jeton signé d'identité \\
+\hline
+HttpOnly cookie & Cookie non accessible en JavaScript \\
+\hline
+Elo & Système de classement \\
+\hline
+Matchmaking & Appariement automatique de joueurs \\
+\hline
+Socket.io & Communication temps réel bidirectionnelle \\
+\hline
+Prisma & ORM TypeScript vers la base \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\section{Approbation}
+% ---------------------------------------------------------------------------
+
+\begin{table}[H]
+\centering
+\caption{Fiche d'approbation}
+\begin{tabularx}{\linewidth}{|X|X|c|c|}
+\hline
+\rowcolor{sectionblue}
+\textcolor{white}{\textbf{Rôle}} & \textcolor{white}{\textbf{Nom}} & \textcolor{white}{\textbf{Date}} & \textcolor{white}{\textbf{Signature}} \\
+\hline
+Étudiant & \StudentName & & \\[2.2em]
+\hline
+Encadrant industriel & \SupervisorName & & \\[2.2em]
+\hline
+Encadrant académique & \AcademicSupervisor & & \\[2.2em]
+\hline
+\end{tabularx}
+\end{table}
+
+\vfill
+\begin{center}
+\textit{Ce cahier des charges correspond à l'application Square One Chess livrée pour le PFE.}
+\end{center}
+
+\end{document}

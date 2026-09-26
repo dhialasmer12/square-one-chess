@@ -1,0 +1,22 @@
+@startuml Seq_Replay
+skinparam dpi 300
+skinparam shadowing false
+title Sequence diagram --- Replay
+
+actor Player
+participant "History / replay\n(Angular)" as UI
+participant "Server" as S
+database "SQLite" as DB
+
+Player -> UI : Opens /history
+UI -> S : GET /api/games/history/:userId
+S -> DB : Load finished games
+DB --> S : Game list
+S --> UI : History
+Player -> UI : Selects a finished game
+UI -> S : GET /api/games/:gameId/moves
+S -> DB : Load moves
+DB --> S : Move list
+S --> UI : Moves
+UI --> Player : Step through the board
+@enduml

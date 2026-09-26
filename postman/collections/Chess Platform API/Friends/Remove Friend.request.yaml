@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Remove Friend'
+order: 4000
+method: DELETE
+url: '{{baseUrl}}/api/friends/:friendId'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: friendId
+    value: '{{friendId}}'

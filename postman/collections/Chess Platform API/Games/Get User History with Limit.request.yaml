@@ -1,0 +1,16 @@
+$kind: http-request
+name: 'Get User History with Limit'
+order: 4000
+method: GET
+url: '{{baseUrl}}/api/games/user/:userId/history'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: userId
+    value: '{{userId}}'
+queryParams:
+  - key: limit
+    value: '50'

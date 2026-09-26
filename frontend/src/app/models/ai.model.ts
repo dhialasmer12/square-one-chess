@@ -20,6 +20,8 @@ export interface SkillEstimateFactors {
   endgame: SkillTierWord;
   blunders: number;
   mistakes: number;
+  accuracyPercent: number;
+  movesAnalyzed: number;
 }
 
 export interface SkillEstimateResponse {

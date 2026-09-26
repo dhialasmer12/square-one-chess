@@ -14,6 +14,8 @@ function isPublicAuthRequest(url: string): boolean {
     // Treat it as "public" so we don't force a logout redirect loop.
     url.includes('/api/auth/me') ||
     url.includes('/api/auth/logout') ||
+    url.includes('/api/auth/forgot-password') ||
+    url.includes('/api/auth/reset-password') ||
     url.includes('/api/auth/resend-verification') ||
     url.includes('/api/auth/verify-email')
   );

@@ -1,0 +1,17 @@
+@startuml Sequence_Inscription
+skinparam dpi 300
+skinparam shadowing false
+title Sequence diagram --- Register
+
+actor Visitor
+participant "Register page\n(Angular)" as UI
+participant "Server" as S
+database "SQLite" as DB
+
+Visitor -> UI : Opens /register and submits the form
+UI -> S : POST /api/auth/register
+S -> DB : Create User
+DB --> S : User saved
+S --> UI : Session cookie
+UI --> Visitor : Redirect to /dashboard
+@enduml

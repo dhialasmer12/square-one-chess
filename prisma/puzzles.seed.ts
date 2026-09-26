@@ -8,83 +8,260 @@ function placementHasBothKings(fen: string): boolean {
   return placement.includes('k') && placement.includes('K');
 }
 
-/** Mate in 1 — every line checked against chess.js (no “capture the king”). */
-function mateInOneBank(): Candidate[] {
-  const rows: Candidate[] = [];
-  const rank1s = [
-    'R5K1',
-    '1R4K1',
-    '2R3K1',
-    '3R2K1',
-    '4R1K1',
-  ];
-  const sans = ['Ra8#', 'Rb8#', 'Rc8#', 'Rd8#', 'Re8#'];
-  for (let i = 0; i < rank1s.length; i += 1) {
-    rows.push({
-      fen: `6k1/5ppp/8/8/8/8/8/${rank1s[i]} w - - 0 1`,
-      moves: [sans[i]!],
-      theme: 'mate_in_1',
-      rating: 300 + i * 15,
-    });
+/** Validate the full SAN line; normalize SANs to chess.js output. */
+function validateAndNormalize(
+  c: Candidate
+): { ok: true; moves: string[] } | { ok: false; reason: string } {
+  let board: Chess;
+  try {
+    board = new Chess(c.fen);
+  } catch (err) {
+    return { ok: false, reason: `illegal fen: ${(err as Error).message}` };
   }
-  rows.push({
+  if (!placementHasBothKings(board.fen())) {
+    return { ok: false, reason: 'both kings required' };
+  }
+  if (!c.moves.length) {
+    return { ok: false, reason: 'empty line' };
+  }
+
+  const normalized: string[] = [];
+  for (const san of c.moves) {
+    let played: ReturnType<Chess['move']>;
+    try {
+      played = board.move(san);
+    } catch (err) {
+      return {
+        ok: false,
+        reason: `illegal ${san}: ${(err as Error).message}`,
+      };
+    }
+    if (!played) {
+      return { ok: false, reason: `illegal move ${san}` };
+    }
+    if (!placementHasBothKings(board.fen())) {
+      return { ok: false, reason: `king capture after ${san}` };
+    }
+    normalized.push(played.san);
+  }
+
+  if (
+    (c.theme === 'mate_in_1' || c.theme === 'mate_in_2') &&
+    !board.isCheckmate()
+  ) {
+    return { ok: false, reason: 'line does not end in checkmate' };
+  }
+  if (c.theme === 'mate_in_1' && normalized.length !== 1) {
+    return { ok: false, reason: 'mate_in_1 must be exactly one ply' };
+  }
+  if (c.theme === 'mate_in_2' && normalized.length < 3) {
+    return { ok: false, reason: 'mate_in_2 needs player–reply–player' };
+  }
+
+  return { ok: true, moves: normalized };
+}
+
+/**
+ * Curated tactics for demo/PFE — real motifs, validated at seed time.
+ * Multi-ply lines: even steps = player, odd = opponent auto-reply.
+ */
+const HAND_CRAFTED: Candidate[] = [
+  // ----- MATE IN 1 -----
+  {
+    fen: '6k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1',
+    moves: ['Re8#'],
+    theme: 'mate_in_1',
+    rating: 400,
+  },
+  {
+    fen: '6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1',
+    moves: ['Ra8#'],
+    theme: 'mate_in_1',
+    rating: 380,
+  },
+  {
+    fen: '6k1/5ppp/8/8/8/8/5PPP/1R4K1 w - - 0 1',
+    moves: ['Rb8#'],
+    theme: 'mate_in_1',
+    rating: 385,
+  },
+  {
+    fen: '6k1/5ppp/8/8/8/8/5PPP/2R3K1 w - - 0 1',
+    moves: ['Rc8#'],
+    theme: 'mate_in_1',
+    rating: 390,
+  },
+  {
+    fen: '6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1',
+    moves: ['Rd8#'],
+    theme: 'mate_in_1',
+    rating: 395,
+  },
+  {
+    fen: '6k1/5ppp/8/8/8/8/5PPP/3QR1K1 w - - 0 1',
+    moves: ['Qd8#'],
+    theme: 'mate_in_1',
+    rating: 420,
+  },
+  {
+    fen: '7k/6pp/8/8/8/8/6PP/4Q1K1 w - - 0 1',
+    moves: ['Qe8#'],
+    theme: 'mate_in_1',
+    rating: 430,
+  },
+  {
+    fen: '4r1k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1',
+    moves: ['Rxe8#'],
+    theme: 'mate_in_1',
+    rating: 450,
+  },
+  {
     fen: '7k/5R2/6K1/8/8/8/8/8 w - - 0 1',
     moves: ['Rf8#'],
     theme: 'mate_in_1',
-    rating: 400,
-  });
-  rows.push({
-    fen: '7k/6pp/5R2/6K1/8/8/8/8 w - - 0 1',
-    moves: ['Rf8#'],
-    theme: 'mate_in_1',
-    rating: 410,
-  });
-  rows.push({
-    fen: '6k1/5ppp/8/8/8/8/8/4R1K1 w - - 0 1',
-    moves: ['Re8#'],
-    theme: 'mate_in_1',
     rating: 360,
-  });
-  rows.push({
-    fen: '6k1/5ppp/8/8/8/8/8/3R2K1 w - - 0 1',
-    moves: ['Rd8#'],
+  },
+  {
+    fen: '5k2/R7/5K2/8/8/8/8/8 w - - 0 1',
+    moves: ['Ra8#'],
     theme: 'mate_in_1',
-    rating: 355,
-  });
-  rows.push({
-    fen: '6k1/5ppp/8/8/8/8/8/2R3K1 w - - 0 1',
-    moves: ['Rc8#'],
+    rating: 370,
+  },
+  {
+    fen: '5k2/8/5K2/8/8/8/8/7R w - - 0 1',
+    moves: ['Rh8#'],
+    theme: 'mate_in_1',
+    rating: 375,
+  },
+  {
+    fen: '7k/5Q2/6K1/8/8/8/8/8 w - - 0 1',
+    moves: ['Qg7#'],
     theme: 'mate_in_1',
     rating: 350,
-  });
-  return rows;
-}
-
-const HAND_CRAFTED: Candidate[] = [
-  // ----- FORK (queen double attack) -----
+  },
   {
-    fen: '3qk3/8/8/8/8/3Q4/8/4K3 w - - 0 1',
-    moves: ['Qxd8+'],
-    theme: 'fork',
+    fen: '6k1/5Q2/6K1/8/8/8/8/8 w - - 0 1',
+    moves: ['Qg7#'],
+    theme: 'mate_in_1',
+    rating: 355,
+  },
+  {
+    fen: 'k7/8/1N6/8/8/8/7Q/4K3 w - - 0 1',
+    moves: ['Qc7#'],
+    theme: 'mate_in_1',
+    rating: 480,
+  },
+  {
+    fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1',
+    moves: ['Qxf7#'],
+    theme: 'mate_in_1',
+    rating: 500,
+  },
+  {
+    fen: 'r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 1',
+    moves: ['Qxf7#'],
+    theme: 'mate_in_1',
+    rating: 490,
+  },
+  {
+    fen: '6k1/4Rppp/8/8/8/8/5PPP/6K1 w - - 0 1',
+    moves: ['Re8#'],
+    theme: 'mate_in_1',
+    rating: 410,
+  },
+  {
+    fen: '4r1k1/5ppp/8/8/8/8/5PPP/6K1 b - - 0 1',
+    moves: ['Re1#'],
+    theme: 'mate_in_1',
+    rating: 405,
+  },
+
+  // ----- MATE IN 2 (principal variation) -----
+  {
+    fen: '6k1/5p1p/6p1/8/8/5Q2/5PPP/6K1 w - - 0 1',
+    moves: ['Qxf7+', 'Kh8', 'Qf8#'],
+    theme: 'mate_in_2',
+    rating: 700,
+  },
+  {
+    fen: '6k1/5ppp/8/8/8/8/4QPPP/6K1 w - - 0 1',
+    moves: ['Qd3', 'Kh8', 'Qd8#'],
+    theme: 'mate_in_2',
     rating: 720,
   },
   {
-    fen: '2q1k3/8/8/8/8/2Q5/8/4K3 w - - 0 1',
-    moves: ['Qxc8+'],
+    fen: '6k1/5ppp/4Q3/8/8/8/5PPP/6K1 w - - 0 1',
+    moves: ['Qd7', 'Kh8', 'Qd8#'],
+    theme: 'mate_in_2',
+    rating: 740,
+  },
+  {
+    fen: '6k1/5ppp/8/8/8/5Q2/6PP/6K1 w - - 0 1',
+    moves: ['Qe4', 'Kh8', 'Qa8#'],
+    theme: 'mate_in_2',
+    rating: 760,
+  },
+  {
+    fen: '3r2k1/5ppp/8/8/8/4Q3/5PPP/6K1 w - - 0 1',
+    moves: ['Qd4', 'Kh8', 'Qxd8#'],
+    theme: 'mate_in_2',
+    rating: 780,
+  },
+  {
+    fen: '2r3k1/5ppp/8/8/8/4Q3/5PPP/6K1 w - - 0 1',
+    moves: ['Qd4', 'Rd8', 'Qxd8#'],
+    theme: 'mate_in_2',
+    rating: 800,
+  },
+
+  // ----- FORK -----
+  {
+    fen: '2q1k3/8/8/3N4/8/8/8/4K3 w - - 0 1',
+    moves: ['Nc7+'],
+    theme: 'fork',
+    rating: 600,
+  },
+  {
+    fen: '4k3/8/2q5/3N4/8/8/8/4K3 w - - 0 1',
+    moves: ['Nc7+'],
+    theme: 'fork',
+    rating: 610,
+  },
+  {
+    fen: '4k3/8/8/1q1N4/8/8/8/4K3 w - - 0 1',
+    moves: ['Nc7+'],
+    theme: 'fork',
+    rating: 620,
+  },
+  {
+    fen: '2k5/1q6/8/8/3N4/8/8/4K3 w - - 0 1',
+    moves: ['Nb5'],
+    theme: 'fork',
+    rating: 640,
+  },
+  {
+    fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p1N1/2B1P3/8/PPPP1PPP/RNBQK2R w KQkq - 0 1',
+    moves: ['Nxf7'],
+    theme: 'fork',
+    rating: 850,
+  },
+  {
+    fen: '6k1/pp3ppp/4q3/8/8/2N5/PP3PPP/6K1 w - - 0 1',
+    moves: ['Nd5'],
     theme: 'fork',
     rating: 700,
   },
   {
-    fen: '1q2k3/8/8/8/8/1Q6/8/4K3 w - - 0 1',
-    moves: ['Qxb8+'],
-    theme: 'fork',
-    rating: 690,
-  },
-  {
-    fen: '4k3/3q4/8/1Q6/8/8/8/4K3 w - - 0 1',
-    moves: ['Qxd7+'],
+    fen: '6k1/5ppp/8/2q5/8/2N5/5PPP/6K1 w - - 0 1',
+    moves: ['Ne4'],
     theme: 'fork',
     rating: 680,
+  },
+  {
+    fen: 'r3k2r/ppp2ppp/2n5/3q4/8/2N5/PPP2PPP/R2QK2R w KQkq - 0 1',
+    moves: ['Nxd5'],
+    theme: 'fork',
+    rating: 650,
   },
   {
     fen: '4k3/8/4r3/8/8/8/4Q3/4K3 w - - 0 1',
@@ -96,121 +273,48 @@ const HAND_CRAFTED: Candidate[] = [
     fen: '3k4/8/3r4/8/8/8/3Q4/4K3 w - - 0 1',
     moves: ['Qxd6+'],
     theme: 'fork',
-    rating: 580,
-  },
-  {
-    fen: '2k5/8/2r5/8/8/8/2Q5/4K3 w - - 0 1',
-    moves: ['Qxc6+'],
-    theme: 'fork',
     rating: 570,
-  },
-  {
-    fen: '4k3/8/8/4q3/8/8/4Q3/4K3 w - - 0 1',
-    moves: ['Qxe5+'],
-    theme: 'fork',
-    rating: 640,
-  },
-  {
-    fen: '5k2/8/8/3q4/8/8/3Q4/4K3 w - - 0 1',
-    moves: ['Qxd5'],
-    theme: 'fork',
-    rating: 630,
-  },
-  {
-    fen: '6k1/8/8/8/3q4/8/3Q4/4K3 w - - 0 1',
-    moves: ['Qxd4'],
-    theme: 'fork',
-    rating: 620,
   },
 
   // ----- PIN -----
   {
-    fen: '4k3/4q3/8/8/8/8/8/4R1K1 w - - 0 1',
+    fen: '4k3/4r3/8/8/8/8/8/4R1K1 w - - 0 1',
     moves: ['Rxe7+'],
     theme: 'pin',
     rating: 500,
   },
   {
-    fen: '4k3/4r3/8/8/8/8/8/4R1K1 w - - 0 1',
+    fen: '4k3/4q3/8/8/8/8/8/4R1K1 w - - 0 1',
     moves: ['Rxe7+'],
     theme: 'pin',
-    rating: 450,
+    rating: 550,
   },
   {
     fen: '4k3/4n3/8/8/8/8/8/4R1K1 w - - 0 1',
     moves: ['Rxe7+'],
     theme: 'pin',
-    rating: 400,
+    rating: 480,
   },
   {
-    fen: '4k3/4b3/8/8/8/8/8/4R1K1 w - - 0 1',
-    moves: ['Rxe7+'],
+    fen: '4k3/8/4b3/8/8/8/4R3/4K3 w - - 0 1',
+    moves: ['Rxe6'],
     theme: 'pin',
-    rating: 400,
+    rating: 520,
+  },
+  {
+    fen: 'r3k3/8/8/8/8/8/8/R3K3 w Qq - 0 1',
+    moves: ['Rxa8+'],
+    theme: 'pin',
+    rating: 460,
   },
   {
     fen: '4k3/4q3/8/8/8/8/8/4Q1K1 w - - 0 1',
     moves: ['Qxe7+'],
     theme: 'pin',
-    rating: 500,
-  },
-  {
-    fen: '4k3/4n3/8/8/8/8/8/4Q1K1 w - - 0 1',
-    moves: ['Qxe7+'],
-    theme: 'pin',
-    rating: 400,
-  },
-  {
-    fen: 'k7/p7/8/8/8/8/8/R3K3 w Q - 0 1',
-    moves: ['Rxa7+'],
-    theme: 'pin',
-    rating: 350,
-  },
-  {
-    fen: '7k/7p/8/8/8/8/8/4K2R w K - 0 1',
-    moves: ['Rxh7+'],
-    theme: 'pin',
-    rating: 350,
-  },
-  {
-    fen: '4k3/4r3/8/8/8/8/4R3/4K3 w - - 0 1',
-    moves: ['Rxe7+'],
-    theme: 'pin',
-    rating: 380,
-  },
-  {
-    fen: '4k3/4b3/8/8/8/8/4R3/4K3 w - - 0 1',
-    moves: ['Rxe7+'],
-    theme: 'pin',
-    rating: 380,
+    rating: 540,
   },
 
-  // ----- SKEWER (legal only: both kings remain; no “king capture”) -----
-  {
-    fen: '7q/8/8/8/8/8/8/R3k1K1 w - - 0 1',
-    moves: ['Ra8'],
-    theme: 'skewer',
-    rating: 700,
-  },
-  {
-    fen: '7r/8/8/8/8/8/8/R3k1K1 w - - 0 1',
-    moves: ['Ra8'],
-    theme: 'skewer',
-    rating: 650,
-  },
-  {
-    fen: 'q7/8/8/8/8/8/8/4k1KR w - - 0 1',
-    moves: ['Rh8'],
-    theme: 'skewer',
-    rating: 700,
-  },
-  {
-    fen: 'r7/8/8/8/8/8/8/4k1KR w - - 0 1',
-    moves: ['Rh8'],
-    theme: 'skewer',
-    rating: 650,
-  },
-  /** Rook check along file; king must move off the queen’s line. */
+  // ----- SKEWER -----
   {
     fen: '3k4/2q5/8/8/8/8/1R6/4K3 w - - 0 1',
     moves: ['Rb8+'],
@@ -224,26 +328,26 @@ const HAND_CRAFTED: Candidate[] = [
     rating: 710,
   },
   {
-    fen: '8/8/8/8/3k4/8/3r4/3R3K w - - 0 1',
-    moves: ['Rxd2+'],
+    fen: '7q/8/8/8/8/8/8/R3k1K1 w - - 0 1',
+    moves: ['Ra8'],
     theme: 'skewer',
-    rating: 600,
+    rating: 680,
   },
   {
-    fen: '8/8/8/8/3k4/8/3q4/3R3K w - - 0 1',
-    moves: ['Rxd2+'],
+    fen: '7r/8/8/8/8/8/8/R3k1K1 w - - 0 1',
+    moves: ['Ra8'],
     theme: 'skewer',
-    rating: 620,
+    rating: 660,
   },
   {
-    fen: '1q6/8/8/8/8/8/8/1R2k1K1 w - - 0 1',
-    moves: ['Rxb8'],
+    fen: 'q7/8/8/8/8/8/8/4k1KR w - - 0 1',
+    moves: ['Rh8'],
     theme: 'skewer',
-    rating: 640,
+    rating: 670,
   },
   {
-    fen: '2q5/8/8/8/8/8/8/2R1k1K1 w - - 0 1',
-    moves: ['Rxc8'],
+    fen: 'r7/8/8/8/8/8/8/4k1KR w - - 0 1',
+    moves: ['Rh8'],
     theme: 'skewer',
     rating: 650,
   },
@@ -259,43 +363,25 @@ const HAND_CRAFTED: Candidate[] = [
     fen: '2k5/1P6/8/8/8/8/8/4K3 w - - 0 1',
     moves: ['b8=Q+'],
     theme: 'endgame',
-    rating: 360,
-  },
-  {
-    fen: '3k4/2P5/8/8/8/8/8/4K3 w - - 0 1',
-    moves: ['c8=Q+'],
-    theme: 'endgame',
-    rating: 370,
+    rating: 350,
   },
   {
     fen: '4k3/3P4/8/8/8/8/8/4K3 w - - 0 1',
     moves: ['d8=Q+'],
     theme: 'endgame',
-    rating: 380,
-  },
-  {
-    fen: '5k2/4P3/8/8/8/8/8/4K3 w - - 0 1',
-    moves: ['e8=Q+'],
-    theme: 'endgame',
-    rating: 390,
+    rating: 360,
   },
   {
     fen: '6k1/5P2/8/8/8/8/8/4K3 w - - 0 1',
     moves: ['f8=Q+'],
     theme: 'endgame',
-    rating: 400,
+    rating: 370,
   },
   {
     fen: '7k/6P1/8/8/8/8/8/4K3 w - - 0 1',
     moves: ['g8=Q+'],
     theme: 'endgame',
-    rating: 410,
-  },
-  {
-    fen: '1k6/7P/8/8/8/8/8/4K3 w - - 0 1',
-    moves: ['h8=Q+'],
-    theme: 'endgame',
-    rating: 420,
+    rating: 380,
   },
   {
     fen: '8/8/8/8/8/4k3/3P4/4K3 w - - 0 1',
@@ -304,21 +390,11 @@ const HAND_CRAFTED: Candidate[] = [
     rating: 450,
   },
   {
-    fen: '8/8/8/8/3k4/8/3P4/4K3 w - - 0 1',
-    moves: ['d3'],
+    fen: '8/8/8/4k3/8/3P4/8/4K3 w - - 0 1',
+    moves: ['d4+'],
     theme: 'endgame',
     rating: 500,
   },
-];
-
-const ALL_CANDIDATES: Candidate[] = [...mateInOneBank(), ...HAND_CRAFTED];
-
-/** Removed on each seed so random/daily cannot serve pre-fix illegal tactics. */
-const STALE_PUZZLE_FENS: string[] = [
-  '4q3/8/8/8/8/8/8/R3k1K1 w - - 0 1',
-  '4r3/8/8/8/8/8/8/R3k1K1 w - - 0 1',
-  '8/8/8/8/8/8/8/1R2k1K1 w - - 0 1',
-  '8/8/8/8/8/8/8/2R1k1K1 w - - 0 1',
 ];
 
 export async function seedPuzzles(prisma: PrismaClient): Promise<{
@@ -328,82 +404,28 @@ export async function seedPuzzles(prisma: PrismaClient): Promise<{
 }> {
   const rejected: { reason: string; fen: string; move: string }[] = [];
   let inserted = 0;
-  let alreadyPresent = 0;
+  const alreadyPresent = 0;
 
-  await prisma.puzzle.deleteMany({ where: { fen: { in: STALE_PUZZLE_FENS } } });
+  // Fresh bank — drop stale toy/illegal puzzles from earlier seeds.
+  await prisma.userPuzzleStats.deleteMany();
+  await prisma.dailyPuzzle.deleteMany();
+  await prisma.puzzle.deleteMany();
 
-  for (const c of ALL_CANDIDATES) {
-    const firstMove = c.moves[0];
-    if (!firstMove) {
-      rejected.push({ reason: 'no move', fen: c.fen, move: '' });
-      continue;
-    }
-
-    let board: Chess;
-    try {
-      board = new Chess(c.fen);
-    } catch (err) {
+  for (const c of HAND_CRAFTED) {
+    const checked = validateAndNormalize(c);
+    if (!checked.ok) {
       rejected.push({
-        reason: `illegal fen: ${(err as Error).message}`,
+        reason: checked.reason,
         fen: c.fen,
-        move: firstMove,
+        move: c.moves[0] ?? '',
       });
-      continue;
-    }
-    if (!placementHasBothKings(board.fen())) {
-      rejected.push({
-        reason: 'illegal fen: both kings must be on the board',
-        fen: c.fen,
-        move: firstMove,
-      });
-      continue;
-    }
-
-    let played: ReturnType<Chess['move']>;
-    try {
-      played = board.move(firstMove);
-    } catch (err) {
-      rejected.push({
-        reason: `illegal move (threw): ${(err as Error).message}`,
-        fen: c.fen,
-        move: firstMove,
-      });
-      continue;
-    }
-    if (!played) {
-      rejected.push({ reason: 'illegal move', fen: c.fen, move: firstMove });
-      continue;
-    }
-    if (!placementHasBothKings(board.fen())) {
-      rejected.push({
-        reason: 'illegal position after move (e.g. king capture — not valid chess)',
-        fen: c.fen,
-        move: firstMove,
-      });
-      continue;
-    }
-    if (c.theme === 'mate_in_1' && !board.isCheckmate()) {
-      rejected.push({
-        reason: 'not checkmate after move',
-        fen: c.fen,
-        move: firstMove,
-      });
-      continue;
-    }
-
-    const existing = await prisma.puzzle.findFirst({
-      where: { fen: c.fen, theme: c.theme },
-      select: { id: true },
-    });
-    if (existing) {
-      alreadyPresent += 1;
       continue;
     }
 
     await prisma.puzzle.create({
       data: {
         fen: c.fen,
-        moves: JSON.stringify(c.moves),
+        moves: JSON.stringify(checked.moves),
         theme: c.theme,
         rating: c.rating,
       },

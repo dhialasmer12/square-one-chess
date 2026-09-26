@@ -1,0 +1,23 @@
+$kind: http-request
+name: 'Make Move'
+order: 12000
+method: POST
+url: '{{baseUrl}}/api/games/:gameId/move'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: gameId
+    value: '{{gameId}}'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "from": "e2",
+      "to": "e4"
+    }

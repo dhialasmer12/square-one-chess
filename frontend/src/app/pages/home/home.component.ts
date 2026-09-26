@@ -45,11 +45,13 @@ import { environment } from '../../../environments/environment';
               class="text-zinc-400 hover:text-zinc-200"
               >Tournaments</a
             >
-            <a
-              routerLink="/dashboard"
-              class="text-zinc-400 hover:text-zinc-200"
-              >Analytics</a
-            >
+            @if (user?.isAdmin) {
+              <a
+                routerLink="/dashboard"
+                class="text-zinc-400 hover:text-zinc-200"
+                >Analytics</a
+              >
+            }
             <a
               routerLink="/leaderboard"
               class="text-zinc-400 hover:text-zinc-200"

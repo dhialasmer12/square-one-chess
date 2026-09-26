@@ -1,0 +1,29 @@
+@startuml UC_Social
+skinparam dpi 200
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #000000
+skinparam actorBorderColor #000000
+skinparam rectangleBorderColor #000000
+skinparam arrowColor #000000
+title Use-case diagram --- Communicate with players
+
+actor "Player" as P
+
+rectangle "Square One Chess" {
+  usecase "Send a friend request" as R
+  usecase "Accept a friend request" as A
+  usecase "Reject a friend request" as J
+  usecase "Chat in the current game" as C
+  usecase "Log in" as L
+}
+
+P -- R
+P -- A
+P -- J
+P -- C
+R ..> L : <<include>>
+A ..> L : <<include>>
+J ..> L : <<include>>
+C ..> L : <<include>>
+
+@enduml

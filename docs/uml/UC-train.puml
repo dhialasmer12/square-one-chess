@@ -1,0 +1,23 @@
+@startuml UC_Train
+skinparam dpi 200
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #000000
+skinparam actorBorderColor #000000
+skinparam rectangleBorderColor #000000
+skinparam arrowColor #000000
+title Use-case diagram --- Train at chess
+
+actor "Player" as P
+
+rectangle "Square One Chess" {
+  usecase "Solve puzzles" as T
+  usecase "Review a finished game" as A
+  usecase "Log in" as L
+}
+
+P -- T
+P -- A
+T ..> L : <<include>>
+A ..> L : <<include>>
+
+@enduml

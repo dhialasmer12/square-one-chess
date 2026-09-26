@@ -31,6 +31,13 @@ export class TournamentApiService {
     );
   }
 
+  forceStart(tournamentId: string) {
+    return this.http.post<BracketResponse>(
+      `${this.base}/${tournamentId}/start`,
+      {}
+    );
+  }
+
   getBracket(tournamentId: string) {
     return this.http.get<BracketResponse>(
       `${this.base}/${tournamentId}/bracket`

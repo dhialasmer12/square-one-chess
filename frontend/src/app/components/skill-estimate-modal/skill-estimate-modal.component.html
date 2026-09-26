@@ -44,6 +44,14 @@
               <span class="capitalize text-zinc-200">{{
                 result.confidence
               }}</span>
+              · Accuracy
+              <span class="text-zinc-200"
+                >{{ result.factors.accuracyPercent }}%</span
+              >
+              ·
+              <span class="text-zinc-500"
+                >{{ result.factors.movesAnalyzed }} moves</span
+              >
             </p>
           </div>
 
@@ -52,6 +60,12 @@
               Factors
             </h3>
             <ul class="mt-2 space-y-2 text-sm">
+              <li class="flex justify-between gap-2">
+                <span class="text-zinc-400">Accuracy</span>
+                <span class="text-zinc-200"
+                  >{{ result.factors.accuracyPercent }}%</span
+                >
+              </li>
               <li class="flex justify-between gap-2">
                 <span class="text-zinc-400">Development</span>
                 <span [class]="tierClass(result.factors.development)">{{

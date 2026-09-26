@@ -41,6 +41,10 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
   private readonly aiSuggest = inject(AiSuggestionService);
 
+  get isAdmin(): boolean {
+    return this.auth.isAdmin();
+  }
+
   @ViewChild('eloCanvas') eloRef?: ElementRef<HTMLCanvasElement>;
   @ViewChild('pieCanvas') pieRef?: ElementRef<HTMLCanvasElement>;
 

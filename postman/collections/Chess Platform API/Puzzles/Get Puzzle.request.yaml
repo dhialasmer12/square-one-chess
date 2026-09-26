@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Get Puzzle'
+order: 8000
+method: GET
+url: '{{baseUrl}}/api/puzzles/:id'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: id
+    value: '{{puzzleId}}'

@@ -34,4 +34,5 @@ export interface UserProfile {
   gamesWon: number;
   createdAt: string;
   updatedAt: string;
+  isAdmin: boolean;
 }

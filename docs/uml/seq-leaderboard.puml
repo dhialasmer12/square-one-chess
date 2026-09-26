@@ -1,0 +1,17 @@
+@startuml Seq_Leaderboard
+skinparam dpi 300
+skinparam shadowing false
+title Sequence diagram --- Leaderboard
+
+actor Player
+participant "Leaderboard page\n(Angular)" as UI
+participant "Server" as S
+database "SQLite" as DB
+
+Player -> UI : Opens /leaderboard
+UI -> S : GET /api/stats/leaderboard
+S -> DB : Order users by Elo
+DB --> S : Ranked list
+S --> UI : Ranking
+UI --> Player : Table of ratings
+@enduml

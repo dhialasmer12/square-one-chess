@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Get User Stats'
+order: 5000
+method: GET
+url: '{{baseUrl}}/api/stats/user/:userId'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: userId
+    value: '{{userId}}'

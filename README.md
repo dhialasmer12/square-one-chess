@@ -52,4 +52,7 @@ npm start
 ## Docs
 
 - `docs/CODEBASE.md`: architecture + API map
+- `docs/BACKLOG.md`: backlog produit (user stories, priorités, sprints)
+- `docs/DIAGRAMME-CAS-UTILISATION.md`: guide du diagramme de cas d’utilisation
+- `docs/uml/01-use-case.puml`: diagramme PlantUML (cas d’utilisation)
 

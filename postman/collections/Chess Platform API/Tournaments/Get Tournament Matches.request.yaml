@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Get Tournament Matches'
+order: 6000
+method: GET
+url: '{{baseUrl}}/api/tournaments/:tournamentId/matches'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: tournamentId
+    value: '{{tournamentId}}'

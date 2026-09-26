@@ -1,0 +1,19 @@
+$kind: http-request
+name: Update Elo
+order: 6000
+method: PUT
+url: '{{baseUrl}}/api/auth/elo'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "newElo": 1200
+    }

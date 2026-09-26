@@ -1,47 +1,26 @@
 @startuml Sequence_Matchmaking_Game
-title Diagramme de séquence — Matchmaking et coup en direct
+skinparam dpi 300
+skinparam shadowing false
+title Sequence diagram --- Matchmaking and live move
 
-actor JoueurA as A
-actor JoueurB as B
-participant "Angular\n(MatchmakingService)" as FE_A
-participant "Angular\n(MatchmakingService)" as FE_B
-participant "Socket.io\n(game.socket)" as SOCK
-participant "GameService" as GS
-database "SQLite\n(Prisma)" as DB
+actor PlayerA as A
+actor PlayerB as B
+participant "Lobby / game\n(Angular A)" as UI_A
+participant "Lobby / game\n(Angular B)" as UI_B
+participant "Server" as S
+database "SQLite" as DB
 
-== File d'attente ==
-A -> FE_A : queue:join(timeControl, elo)
-FE_A -> SOCK : emit queue:join
-SOCK -> DB : insert QueueEntry
-note right of SOCK : Attente d'un adversaire compatible
-
-B -> FE_B : queue:join(...)
-FE_B -> SOCK : emit queue:join
-SOCK -> DB : find match
-SOCK -> GS : createGame(white, black)
-GS -> DB : insert Game
-SOCK --> FE_A : match:found(gameId)
-SOCK --> FE_B : match:found(gameId)
-
-== Rejoindre la partie ==
-A -> FE_A : navigate /game/:id
-FE_A -> SOCK : join game room
-B -> FE_B : join game room
-
-== Jouer un coup ==
-A -> FE_A : déplacer pièce
-FE_A -> SOCK : game:move(from, to, promotion?)
-SOCK -> GS : applyMove(gameId, move)
-GS -> GS : chess.js validate
-GS -> DB : insert Move, update Game.fen
-SOCK --> FE_A : game:moved(state)
-SOCK --> FE_B : game:moved(state)
-
-alt Partie terminée (échec et mat, pat, etc.)
-  GS -> DB : update Game.status, winner
-  GS -> DB : update User Elo (StatsService)
-  SOCK --> FE_A : game:end(result)
-  SOCK --> FE_B : game:end(result)
-end
-
+A -> UI_A : Join queue
+UI_A -> S : Join matchmaking
+S -> DB : Save queue entry
+B -> UI_B : Join queue
+UI_B -> S : Join matchmaking
+S -> DB : Create Game
+S --> UI_A : Match found
+S --> UI_B : Match found
+A -> UI_A : Plays a move
+UI_A -> S : Play move
+S -> DB : Save Move
+S --> UI_A : New position
+S --> UI_B : New position
 @enduml

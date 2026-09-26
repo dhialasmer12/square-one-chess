@@ -1,4 +1,6 @@
 @startuml Square_One_Chess_Components
+skinparam dpi 300
+skinparam dpi 300
 title Diagramme de composants — Déploiement logique
 
 node "Navigateur" {

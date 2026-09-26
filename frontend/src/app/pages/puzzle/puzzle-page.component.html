@@ -59,8 +59,11 @@
                 <h1 class="font-display text-2xl font-bold text-zinc-50">
                   Rating {{ puzzle.rating }}
                 </h1>
-                <p class="mt-1 text-sm text-zinc-500">
-                  Find the best first move · {{ puzzle.plies }} ply line stored
+                <p class="mt-1 text-sm font-medium text-zinc-300">
+                  {{ toMoveLabel }}
+                </p>
+                <p class="mt-0.5 text-sm text-zinc-500">
+                  {{ plyProgressLabel }}
                 </p>
               } @else {
                 <h1 class="font-display text-2xl font-bold text-zinc-50">
@@ -87,6 +90,38 @@
               </button>
             </div>
           </div>
+
+          @if (themes.length) {
+            <div class="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                (click)="selectTheme(null)"
+                [disabled]="loading"
+                class="rounded-lg px-2.5 py-1 text-xs font-semibold uppercase tracking-wide transition disabled:opacity-50"
+                [class.bg-[#81b64c]]="selectedTheme === null"
+                [class.text-zinc-950]="selectedTheme === null"
+                [class.bg-zinc-800]="selectedTheme !== null"
+                [class.text-zinc-300]="selectedTheme !== null"
+              >
+                All
+              </button>
+              @for (t of themes; track t.theme) {
+                <button
+                  type="button"
+                  (click)="selectTheme(t.theme)"
+                  [disabled]="loading"
+                  class="rounded-lg px-2.5 py-1 text-xs font-semibold uppercase tracking-wide transition disabled:opacity-50"
+                  [class.bg-[#81b64c]]="selectedTheme === t.theme"
+                  [class.text-zinc-950]="selectedTheme === t.theme"
+                  [class.bg-zinc-800]="selectedTheme !== t.theme"
+                  [class.text-zinc-300]="selectedTheme !== t.theme"
+                >
+                  {{ themeLabel(t.theme) }}
+                  <span class="opacity-70">({{ t.count }})</span>
+                </button>
+              }
+            </div>
+          }
 
           <div
             class="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-400"

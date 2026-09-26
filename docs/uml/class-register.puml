@@ -1,0 +1,35 @@
+@startuml Class_Register
+skinparam dpi 200
+hide circle
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
+left to right direction
+title Class diagram --- Register
+
+class RegisterPage {
+  +username: String
+  +email: String
+  +password: String
+  --
+  +submit()
+}
+class AuthService {
+  --
+  +registerUser()
+  +verifyEmail()
+}
+class User {
+  +id: String
+  +email: String
+  +username: String
+  +password: String
+  +emailVerified: Boolean
+  +elo: Int
+}
+
+RegisterPage "1" --> "1" AuthService : uses
+AuthService "1" --> "*" User : creates
+
+@enduml

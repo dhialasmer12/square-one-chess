@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Get Valid Moves'
+order: 9000
+method: GET
+url: '{{baseUrl}}/api/games/:gameId/valid-moves'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: gameId
+    value: '{{gameId}}'

@@ -1,0 +1,10 @@
+$kind: http-request
+name: Request Email Verification
+order: 7000
+method: POST
+url: '{{baseUrl}}/api/auth/request-email-verification'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'

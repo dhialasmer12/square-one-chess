@@ -1,0 +1,10 @@
+$kind: http-request
+name: Get Puzzle Themes
+order: 4000
+method: GET
+url: '{{baseUrl}}/api/puzzles/themes'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'

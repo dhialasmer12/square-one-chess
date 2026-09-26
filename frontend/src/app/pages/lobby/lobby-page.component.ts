@@ -43,6 +43,10 @@ import { GamePlayService } from '../../services/game-play.service';
 })
 export class LobbyPageComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
+
+  get isAdmin(): boolean {
+    return this.auth.isAdmin();
+  }
   private readonly router = inject(Router);
   private readonly sockets = inject(SocketService);
   private readonly queue = inject(QueueService);
@@ -210,6 +214,12 @@ export class LobbyPageComponent implements OnInit, OnDestroy {
     this.queuePosition = null;
     this.pendingMatch = p;
     void this.refreshPublicQueueSize();
+    // Auto-enter so a refresh/missed click does not lose the match.
+    window.setTimeout(() => {
+      if (this.pendingMatch?.gameId === p.gameId) {
+        this.enterMatchedGame();
+      }
+    }, 600);
   }
 
   private loadLobbyData(): void {

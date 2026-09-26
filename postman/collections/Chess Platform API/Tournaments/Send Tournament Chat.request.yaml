@@ -1,0 +1,22 @@
+$kind: http-request
+name: 'Send Tournament Chat'
+order: 8000
+method: POST
+url: '{{baseUrl}}/api/tournaments/:tournamentId/chat'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: tournamentId
+    value: '{{tournamentId}}'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "text": "Good luck everyone!"
+    }

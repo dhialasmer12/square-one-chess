@@ -1,0 +1,57 @@
+@startuml Class_Play
+skinparam dpi 200
+hide circle
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
+left to right direction
+title Class diagram --- Play online games
+
+class GamePage {
+  --
+  +sendMove()
+  +resign()
+  +offerDraw()
+}
+class GamePlayService {
+  --
+  +sendMove()
+  +resign()
+  +offerDraw()
+  +createBotGame()
+}
+
+abstract class Game {
+  +id: String
+  +fen: String
+  +status: String
+  +timeControl: String
+}
+class OnlineGame {
+}
+class BotGame {
+  +botDifficulty: String
+}
+class Move {
+  +moveNumber: Int
+  +fromSquare: String
+  +toSquare: String
+  +fen: String
+}
+class User {
+  +id: String
+  +elo: Int
+}
+
+Game <|-- OnlineGame
+Game <|-- BotGame
+
+GamePage "1" --> "1" GamePlayService : uses
+GamePlayService "1" --> "*" Game : manages
+Game "1" *-- "*" Move : contains
+User "1" -- "*" OnlineGame : white
+User "1" -- "*" OnlineGame : black
+User "1" -- "*" BotGame : plays
+
+@enduml

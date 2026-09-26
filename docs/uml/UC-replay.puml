@@ -1,0 +1,20 @@
+@startuml UC_Replay
+skinparam dpi 200
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #000000
+skinparam actorBorderColor #000000
+skinparam rectangleBorderColor #000000
+skinparam arrowColor #000000
+title Use-case diagram --- Replay
+
+actor "Player" as P
+
+rectangle "Square One Chess" {
+  usecase "View and replay games" as H
+  usecase "Log in" as L
+}
+
+P -- H
+H ..> L : <<include>>
+
+@enduml

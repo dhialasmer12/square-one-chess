@@ -1,0 +1,29 @@
+@startuml UC_Tournament
+skinparam dpi 200
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #000000
+skinparam actorBorderColor #000000
+skinparam rectangleBorderColor #000000
+skinparam arrowColor #000000
+title Use-case diagram --- Take part in tournaments
+
+actor "Player" as P
+
+rectangle "Square One Chess" {
+  usecase "Create a tournament" as Cr
+  usecase "Join a tournament" as J
+  usecase "Start a tournament" as S
+  usecase "Play a tournament match" as M
+  usecase "Log in" as L
+}
+
+P -- Cr
+P -- J
+P -- S
+P -- M
+Cr ..> L : <<include>>
+J ..> L : <<include>>
+S ..> L : <<include>>
+M ..> L : <<include>>
+
+@enduml

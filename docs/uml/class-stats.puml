@@ -1,0 +1,51 @@
+@startuml Class_Stats
+skinparam dpi 200
+hide circle
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
+left to right direction
+title Class diagram --- Statistics and administration
+
+class LeaderboardPage {
+  --
+  +loadRanking()
+}
+class DashboardPage {
+  --
+  +loadUserStats()
+  +loadPlatformAnalytics()
+}
+class StatsService {
+  --
+  +getLeaderboard()
+  +getUserStats()
+}
+class AnalyticsService {
+  --
+  +getPlatformAnalytics()
+}
+
+class User {
+  +elo: Int
+  +eloBullet: Int
+  +eloBlitz: Int
+  +eloRapid: Int
+  +gamesPlayed: Int
+  +gamesWon: Int
+}
+class Administrator {
+  --
+  +viewPlatformAnalytics()
+}
+
+User <|-- Administrator
+
+LeaderboardPage "1" --> "1" StatsService : uses
+DashboardPage "1" --> "1" StatsService : player stats
+DashboardPage "1" --> "1" AnalyticsService : platform analytics
+StatsService "1" --> "*" User : ranks
+AnalyticsService "1" --> "*" Administrator : restricted to
+
+@enduml

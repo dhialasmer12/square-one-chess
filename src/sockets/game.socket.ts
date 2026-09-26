@@ -17,8 +17,11 @@ import {
   registerSocialChatHandlers,
 } from './social.socket';
 
-/** ELO difference allowed for auto-matchmaking. */
-const ELO_RANGE = 100;
+/** ELO difference allowed for auto-matchmaking (env MATCHMAKING_ELO_RANGE). */
+const ELO_RANGE = (() => {
+  const n = Number(process.env.MATCHMAKING_ELO_RANGE ?? 400);
+  return Number.isFinite(n) ? Math.min(2000, Math.max(50, Math.floor(n))) : 400;
+})();
 
 export type { ActiveGameEntry };
 export { activeGames };
@@ -83,6 +86,56 @@ function clearActiveGameMeta(socket: Socket | undefined): void {
   if (!socket) return;
   delete socket.data.activeGameId;
   delete socket.data.activeColor;
+}
+
+/** Start the grace period that forfeits an unfinished game if the player does not rejoin. */
+function scheduleDisconnectForfeit(
+  io: Server,
+  gameId: string,
+  userId: string
+): void {
+  const dk = graceKey(gameId, userId);
+  const prev = disconnectGraceTimers.get(dk);
+  if (prev) {
+    clearTimeout(prev);
+    disconnectGraceTimers.delete(dk);
+  }
+
+  io.to(`game:${gameId}`).emit('game:opponent-away', {
+    gameId,
+    userId,
+    graceMs: DISCONNECT_GRACE_MS,
+  });
+
+  const t = setTimeout(() => {
+    disconnectGraceTimers.delete(dk);
+    const reconnected = [...io.sockets.sockets.values()].some(
+      (s) =>
+        s.connected &&
+        s.data.userId === userId &&
+        s.data.activeGameId === gameId
+    );
+    if (reconnected) {
+      return;
+    }
+    void (async () => {
+      const final = await gameService.abortGameByDisconnect(gameId, userId);
+      if (final) {
+        io.to(`game:${gameId}`).emit('game:end', {
+          winner: final.winner,
+          reason: 'disconnect',
+          game: final,
+        });
+      }
+      activeGames.delete(gameId);
+      for (const s of io.sockets.sockets.values()) {
+        if (s.data.activeGameId === gameId) {
+          clearActiveGameMeta(s);
+        }
+      }
+    })();
+  }, DISCONNECT_GRACE_MS);
+  disconnectGraceTimers.set(dk, t);
 }
 
 async function tryMatch(io: Server): Promise<void> {
@@ -341,12 +394,36 @@ export function registerGameSockets(io: Server): void {
 
     socket.on(
       'game:leave',
-      (payload: { gameId?: string }, ack?: (r: unknown) => void) => {
+      async (payload: { gameId?: string }, ack?: (r: unknown) => void) => {
         const gameId = payload?.gameId ?? socket.data.activeGameId;
-        if (gameId) {
-          void socket.leave(`game:${gameId}`);
+        if (!gameId) {
+          clearActiveGameMeta(socket);
+          ack?.({ ok: true });
+          return;
         }
-        clearActiveGameMeta(socket);
+
+        void socket.leave(`game:${gameId}`);
+
+        try {
+          const game = await prisma.game.findUnique({ where: { id: gameId } });
+          const stillPlaying =
+            !!game &&
+            game.status !== 'finished' &&
+            (game.whitePlayerId === userId || game.blackPlayerId === userId);
+
+          // Soft leave (navigate away) used to clear activeGameId and skip forfeit.
+          // Treat leaving an unfinished game like a disconnect: grace, then abort.
+          if (stillPlaying) {
+            clearActiveGameMeta(socket);
+            scheduleDisconnectForfeit(io, gameId, userId);
+          } else {
+            clearDisconnectGrace(gameId, userId);
+            clearActiveGameMeta(socket);
+          }
+        } catch (e) {
+          console.error('[game:leave]', e);
+          clearActiveGameMeta(socket);
+        }
         ack?.({ ok: true });
       }
     );
@@ -595,51 +672,7 @@ export function registerGameSockets(io: Server): void {
 
       const activeId = socket.data.activeGameId as string | undefined;
       if (activeId) {
-        const dk = graceKey(activeId, disconnectedUserId);
-        const prev = disconnectGraceTimers.get(dk);
-        if (prev) {
-          clearTimeout(prev);
-          disconnectGraceTimers.delete(dk);
-        }
-
-        io.to(`game:${activeId}`).emit('game:opponent-away', {
-          gameId: activeId,
-          userId: disconnectedUserId,
-          graceMs: DISCONNECT_GRACE_MS,
-        });
-
-        const t = setTimeout(() => {
-          disconnectGraceTimers.delete(dk);
-          const reconnected = [...io.sockets.sockets.values()].some(
-            (s) =>
-              s.connected &&
-              s.data.userId === disconnectedUserId &&
-              s.data.activeGameId === activeId
-          );
-          if (reconnected) {
-            return;
-          }
-          void (async () => {
-            const final = await gameService.abortGameByDisconnect(
-              activeId,
-              disconnectedUserId
-            );
-            if (final) {
-              io.to(`game:${activeId}`).emit('game:end', {
-                winner: final.winner,
-                reason: 'disconnect',
-                game: final,
-              });
-            }
-            activeGames.delete(activeId);
-            for (const s of io.sockets.sockets.values()) {
-              if (s.data.activeGameId === activeId) {
-                clearActiveGameMeta(s);
-              }
-            }
-          })();
-        }, DISCONNECT_GRACE_MS);
-        disconnectGraceTimers.set(dk, t);
+        scheduleDisconnectForfeit(io, activeId, disconnectedUserId);
       }
 
       onSocialDisconnect(io, disconnectedUserId);

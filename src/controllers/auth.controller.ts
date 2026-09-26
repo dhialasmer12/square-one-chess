@@ -38,7 +38,12 @@ function clearAuthCookie(res: Response): void {
 export const register = asyncHandler(async (req, res: Response) => {
   const body = req.body as RegisterBody;
   const result = await authService.registerUser(body);
-  setAuthCookie(res, result.tokens.accessToken);
+  // Do not open a session until email is verified (when verification is required).
+  if (result.emailVerificationRequired) {
+    clearAuthCookie(res);
+  } else {
+    setAuthCookie(res, result.tokens.accessToken);
+  }
   // Token is only in the HttpOnly cookie — not in JSON (avoids localStorage / XSS token theft).
   res.status(201).json({
     userId: result.userId,

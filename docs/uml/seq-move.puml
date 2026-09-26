@@ -1,0 +1,17 @@
+@startuml Seq_Move
+skinparam dpi 300
+skinparam shadowing false
+title Sequence diagram --- Live move
+
+actor Player
+participant "Game page\n(Angular)" as UI
+participant "Server" as S
+database "SQLite" as DB
+
+Player -> UI : Plays a move on the board
+UI -> S : Play move
+S -> DB : Save Move and update Game
+DB --> S : Position saved
+S --> UI : New board position
+UI --> Player : Board updated
+@enduml

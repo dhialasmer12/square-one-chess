@@ -36,6 +36,14 @@ export const joinTournament = asyncHandler(async (req, res: Response) => {
   res.json(row);
 });
 
+export const forceStartTournament = asyncHandler(async (req, res: Response) => {
+  const userId = req.user!.sub;
+  const { tournamentId } = req.params;
+  await tournamentService.forceStartTournament(tournamentId, userId);
+  const bracket = await tournamentService.getBracket(tournamentId);
+  res.json(bracket);
+});
+
 export const getBracket = asyncHandler(async (req, res: Response) => {
   const { tournamentId } = req.params;
   const bracket = await tournamentService.getBracket(tournamentId);

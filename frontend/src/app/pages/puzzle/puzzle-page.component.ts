@@ -39,9 +39,17 @@ export class PuzzlePageComponent implements OnInit, AfterViewInit, OnDestroy {
   loadError = '';
 
   puzzle: PuzzlePublic | null = null;
+  /** Live board FEN (advances through multi-ply). */
   puzzleFen = '';
+  /** Immutable start FEN for resets. */
+  startFen = '';
+  lineIndex = 0;
   orientation: 'white' | 'black' = 'white';
+  sideToMove: 'white' | 'black' = 'white';
   boardLocked = false;
+
+  themes: { theme: string; count: number }[] = [];
+  selectedTheme: string | null = null;
 
   stats: PuzzleStatsResponse['stats'] | null = null;
 
@@ -65,11 +73,39 @@ export class PuzzlePageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadStats();
+    this.loadThemes();
     this.loadDaily();
   }
 
   themeLabel(theme: string): string {
     return theme.replace(/_/g, ' ');
+  }
+
+  get toMoveLabel(): string {
+    return this.sideToMove === 'white' ? 'White to move' : 'Black to move';
+  }
+
+  get plyProgressLabel(): string {
+    if (!this.puzzle) {
+      return '';
+    }
+    if (this.puzzle.plies <= 1) {
+      return 'Find the best move';
+    }
+    const playerSteps = Math.ceil(this.puzzle.plies / 2);
+    const currentStep = Math.floor(this.lineIndex / 2) + 1;
+    return `Your move ${Math.min(currentStep, playerSteps)} / ${playerSteps}`;
+  }
+
+  loadThemes(): void {
+    this.puzzles.getThemes().subscribe({
+      next: (r) => {
+        this.themes = r.themes ?? [];
+      },
+      error: () => {
+        /* non-fatal */
+      },
+    });
   }
 
   loadStats(): void {
@@ -85,6 +121,7 @@ export class PuzzlePageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadDaily(): void {
+    this.selectedTheme = null;
     this.startLoad();
     this.puzzles.getDailyPuzzle().subscribe({
       next: (r) => this.applyPuzzle(r.puzzle),
@@ -97,10 +134,15 @@ export class PuzzlePageComponent implements OnInit, AfterViewInit, OnDestroy {
       ? Math.min(2000, this.stats.chessElo + 150)
       : 1600;
     this.startLoad();
-    this.puzzles.getRandomPuzzle(cap).subscribe({
+    this.puzzles.getRandomPuzzle(cap, this.selectedTheme).subscribe({
       next: (r) => this.applyPuzzle(r.puzzle),
       error: () => this.failLoad('Could not load a puzzle.'),
     });
+  }
+
+  selectTheme(theme: string | null): void {
+    this.selectedTheme = theme;
+    this.newRandom();
   }
 
   private startLoad(): void {
@@ -119,7 +161,9 @@ export class PuzzlePageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private applyPuzzle(p: PuzzlePublic): void {
     this.puzzle = p;
+    this.startFen = p.fen;
     this.puzzleFen = p.fen;
+    this.lineIndex = 0;
     this.attempts = 0;
     this.loading = false;
     this.boardLocked = false;
@@ -127,8 +171,10 @@ export class PuzzlePageComponent implements OnInit, AfterViewInit, OnDestroy {
     try {
       const g = new Chess(p.fen);
       this.orientation = g.turn() === 'w' ? 'white' : 'black';
+      this.sideToMove = this.orientation;
     } catch {
       this.orientation = 'white';
+      this.sideToMove = 'white';
     }
   }
 
@@ -138,7 +184,7 @@ export class PuzzlePageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     let g: Chess;
     try {
-      g = new Chess(this.puzzle.fen);
+      g = new Chess(this.puzzleFen);
     } catch {
       return;
     }
@@ -151,31 +197,52 @@ export class PuzzlePageComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     this.boardLocked = true;
-    this.puzzles.checkMove(this.puzzle.id, played.san).subscribe({
+    // Optimistic show of the played move while we wait for the server.
+    this.puzzleFen = g.fen();
+    this.puzzles.checkMove(this.puzzle.id, played.san, this.lineIndex).subscribe({
       next: (r) => {
         this.attempts = r.attempts;
         this.puzzle = r.puzzle;
-        if (r.correct || r.alreadySolved) {
-          this.flash('ok', r.alreadySolved ? 'Already solved — nice!' : 'Correct!');
+        if (r.alreadySolved) {
+          this.flash('ok', 'Already solved — nice!');
+          this.boardLocked = true;
+          this.loadStats();
+          return;
+        }
+        if (!r.correct) {
+          this.flash('bad', 'Not quite — try again.');
+          this.lineIndex = 0;
+          this.puzzleFen = this.startFen;
+          this.boardLocked = false;
+          this.clearHighlights();
+          queueMicrotask(() => this.chessBoard?.setPosition(this.startFen));
+          return;
+        }
+
+        this.lineIndex = r.lineIndex;
+        this.puzzleFen = r.fen;
+        queueMicrotask(() => this.chessBoard?.setPosition(r.fen));
+
+        if (r.solved) {
+          this.flash('ok', 'Solved!');
           this.boardLocked = true;
           this.loadStats();
         } else {
-          this.flash('bad', 'Not quite — try again.');
-          this.puzzleFen = this.puzzle!.fen;
+          const reply =
+            r.opponentSans.length > 0
+              ? `Good — ${r.opponentSans.join(', ')}. Your move.`
+              : 'Good — keep going.';
+          this.flash('ok', reply);
           this.boardLocked = false;
           this.clearHighlights();
-          queueMicrotask(() =>
-            this.chessBoard?.setPosition(this.puzzle!.fen)
-          );
         }
       },
       error: () => {
         this.flash('bad', 'Could not verify move.');
-        this.puzzleFen = this.puzzle!.fen;
+        this.puzzleFen = this.startFen;
+        this.lineIndex = 0;
         this.boardLocked = false;
-        queueMicrotask(() =>
-          this.chessBoard?.setPosition(this.puzzle!.fen)
-        );
+        queueMicrotask(() => this.chessBoard?.setPosition(this.startFen));
       },
     });
   }
@@ -188,15 +255,15 @@ export class PuzzlePageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.feedback = 'idle';
         this.feedbackText = '';
       }
-    }, 1600);
+    }, 1800);
   }
 
   showHint(): void {
-    if (!this.puzzle || this.hintBusy) {
+    if (!this.puzzle || this.hintBusy || this.boardLocked) {
       return;
     }
     this.hintBusy = true;
-    this.puzzles.getHint(this.puzzle.id).subscribe({
+    this.puzzles.getHint(this.puzzle.id, this.lineIndex).subscribe({
       next: (h) => {
         this.hintBusy = false;
         if (h.fromSquare && this.chessBoard) {
@@ -219,7 +286,7 @@ export class PuzzlePageComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     this.aiBusy = true;
-    this.ai.predictMove(this.puzzle.fen, 1).subscribe({
+    this.ai.predictMove(this.puzzleFen, 1).subscribe({
       next: (r) => {
         this.aiBusy = false;
         const s = r.suggestions[0];

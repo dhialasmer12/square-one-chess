@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Join Tournament'
+order: 3000
+method: POST
+url: '{{baseUrl}}/api/tournaments/:tournamentId/join'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: tournamentId
+    value: '{{tournamentId}}'

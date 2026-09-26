@@ -1,0 +1,22 @@
+@startuml Seq_Tournament
+skinparam dpi 300
+skinparam shadowing false
+title Sequence diagram --- Join a tournament
+
+actor Player
+participant "Tournament page\n(Angular)" as UI
+participant "Server" as S
+database "SQLite" as DB
+
+Player -> UI : Opens /tournaments
+UI -> S : GET /api/tournaments/active
+S -> DB : Load tournaments
+DB --> S : Tournament list
+S --> UI : Active events
+Player -> UI : Joins a tournament
+UI -> S : POST /api/tournaments/:id/join
+S -> DB : Save TournamentRegistration
+DB --> S : Registration saved
+S --> UI : Join confirmed
+UI --> Player : Player is in the tournament
+@enduml

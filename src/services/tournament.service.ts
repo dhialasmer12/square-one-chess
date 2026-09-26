@@ -11,7 +11,7 @@ import type {
 } from '../types';
 import * as gameService from './game.service';
 
-export const SINGLE_ELIM_SIZES = [4, 8, 16, 32] as const;
+export const SINGLE_ELIM_SIZES = [2, 4, 8, 16, 32] as const;
 
 export type TournamentType = 'single_elimination' | 'round_robin';
 
@@ -143,7 +143,10 @@ async function activateMatchesForRound(
   }
 }
 
-export async function startTournament(tournamentId: string): Promise<void> {
+export async function startTournament(
+  tournamentId: string,
+  opts?: { allowPartial?: boolean; actorUserId?: string }
+): Promise<void> {
   const tour = await prisma.tournament.findUnique({
     where: { id: tournamentId },
     include: {
@@ -153,7 +156,28 @@ export async function startTournament(tournamentId: string): Promise<void> {
   if (!tour || tour.status !== 'waiting') {
     return;
   }
-  if (tour.registrations.length !== tour.maxPlayers) {
+
+  const n = tour.registrations.length;
+  if (opts?.allowPartial) {
+    if (opts.actorUserId && tour.createdById !== opts.actorUserId) {
+      throw new HttpError(403, 'Only the tournament creator can force-start');
+    }
+    if (n < 2) {
+      throw new HttpError(400, 'Need at least 2 registered players to start');
+    }
+    if (
+      tour.type === 'single_elimination' &&
+      !SINGLE_ELIM_SIZES.includes(n as (typeof SINGLE_ELIM_SIZES)[number])
+    ) {
+      throw new HttpError(
+        400,
+        'Single elimination force-start needs 2, 4, 8, 16 or 32 players'
+      );
+    }
+    if (tour.type === 'round_robin' && n % 2 !== 0) {
+      throw new HttpError(400, 'Round robin force-start needs an even number of players');
+    }
+  } else if (n !== tour.maxPlayers) {
     return;
   }
 
@@ -424,7 +448,7 @@ export async function createTournament(
 
   if (t === 'single_elimination') {
     if (!SINGLE_ELIM_SIZES.includes(maxPlayers as (typeof SINGLE_ELIM_SIZES)[number])) {
-      throw new HttpError(400, 'maxPlayers must be 4, 8, 16, or 32 for single elimination');
+      throw new HttpError(400, 'maxPlayers must be 2, 4, 8, 16, or 32 for single elimination');
     }
   } else {
     if (maxPlayers < 2 || maxPlayers > 16 || maxPlayers % 2 !== 0) {
@@ -497,6 +521,21 @@ export async function joinTournament(
   return toListItem(updated, finalCount);
 }
 
+/** Creator can start early once enough players are registered (demo-friendly). */
+export async function forceStartTournament(
+  tournamentId: string,
+  actorUserId: string
+): Promise<void> {
+  await startTournament(tournamentId, {
+    allowPartial: true,
+    actorUserId,
+  });
+  const tour = await prisma.tournament.findUnique({ where: { id: tournamentId } });
+  if (!tour || tour.status === 'waiting') {
+    throw new HttpError(400, 'Could not start tournament with the current roster');
+  }
+}
+
 function toListItem(
   row: {
     id: string;
@@ -506,6 +545,7 @@ function toListItem(
     status: string;
     currentRound: number;
     createdAt: Date;
+    createdById: string | null;
   },
   currentPlayers: number
 ): TournamentListItem {
@@ -518,6 +558,7 @@ function toListItem(
     status: row.status,
     currentRound: row.currentRound,
     createdAt: row.createdAt.toISOString(),
+    createdById: row.createdById ?? '',
   };
 }
 

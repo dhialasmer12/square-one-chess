@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Resign Game'
+order: 13000
+method: POST
+url: '{{baseUrl}}/api/games/:gameId/resign'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: gameId
+    value: '{{gameId}}'

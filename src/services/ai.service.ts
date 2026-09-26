@@ -841,7 +841,10 @@ function userMoveCount(sanMoves: string[], perspective: 'white' | 'black'): numb
   return c;
 }
 
-function buildStrengthsWeaknesses(f: SkillEstimateFactors): {
+function buildStrengthsWeaknesses(
+  f: SkillEstimateFactors,
+  accuracyPercent: number
+): {
   strengths: string[];
   weaknesses: string[];
 } {
@@ -860,64 +863,136 @@ function buildStrengthsWeaknesses(f: SkillEstimateFactors): {
   }
   if (f.endgame === 'good') {
     strengths.push('Endgame technique');
-  } else if (f.endgame === 'poor') {
+  } else if (f.endgame === 'poor' && f.movesAnalyzed >= 20) {
     weaknesses.push('Endgame technique');
   }
-  if (f.blunders === 0 && f.mistakes <= 1) {
-    strengths.push('Move accuracy');
+  if (accuracyPercent >= 75) {
+    strengths.push(`High accuracy (${accuracyPercent}%)`);
+  } else if (accuracyPercent <= 45 && f.movesAnalyzed >= 6) {
+    weaknesses.push(`Low accuracy (${accuracyPercent}%)`);
+  }
+  if (f.blunders === 0 && f.mistakes <= 1 && f.movesAnalyzed >= 8) {
+    strengths.push('Clean game — few serious errors');
   }
   if (f.blunders >= 2) {
-    weaknesses.push('Blunder control');
+    weaknesses.push(`${f.blunders} blunders in this game`);
   }
-  if (f.mistakes >= 4) {
-    weaknesses.push('Consistency');
+  if (f.mistakes >= 3) {
+    weaknesses.push(`${f.mistakes} inaccuracies / mistakes`);
   }
-  if (f.development === 'average' && strengths.length < 3) {
-    strengths.push('Playable development');
-  }
-  if (
-    f.tactics === 'average' &&
-    strengths.length < 2 &&
-    !weaknesses.length
-  ) {
-    strengths.push('Balanced middlegame');
-  }
-  if (!weaknesses.length && f.endgame === 'average') {
-    weaknesses.push('Pawn structure');
+  if (f.movesAnalyzed < 8) {
+    weaknesses.push('Short sample — play longer games for a clearer estimate');
   }
   return { strengths, weaknesses };
+}
+
+async function classifySideMoves(
+  sanMoves: string[],
+  perspective: 'white' | 'black'
+): Promise<{
+  blunders: number;
+  mistakes: number;
+  goods: number;
+  excellents: number;
+  totalLoss: number;
+  movesAnalyzed: number;
+}> {
+  const chess = new Chess();
+  let blunders = 0;
+  let mistakes = 0;
+  let goods = 0;
+  let excellents = 0;
+  let totalLoss = 0;
+  let movesAnalyzed = 0;
+  for (let i = 0; i < sanMoves.length; i++) {
+    const san = sanMoves[i];
+    if (!san) {
+      break;
+    }
+    const isWhiteMove = i % 2 === 0;
+    if (isWhiteMove !== (perspective === 'white')) {
+      const r = chess.move(san);
+      if (!r) {
+        break;
+      }
+      continue;
+    }
+    const q = await analyzeMoveQuality(chess, san);
+    movesAnalyzed += 1;
+    totalLoss += q.loss;
+    if (q.label === 'blunder') {
+      blunders += 1;
+    } else if (q.label === 'mistake') {
+      mistakes += 1;
+    } else if (q.label === 'good') {
+      goods += 1;
+    } else {
+      excellents += 1;
+    }
+    const r = chess.move(san);
+    if (!r) {
+      break;
+    }
+  }
+  return { blunders, mistakes, goods, excellents, totalLoss, movesAnalyzed };
 }
 
 async function estimateSkillOneSide(
   sanMoves: string[],
   perspective: 'white' | 'black'
 ): Promise<SkillEstimateResponse> {
-  const { blunders, mistakes } = await countBlunders(sanMoves, perspective);
+  const classified = await classifySideMoves(sanMoves, perspective);
+  const { blunders, mistakes, goods, excellents, totalLoss, movesAnalyzed } =
+    classified;
   const open = evaluateOpeningKnowledge(sanMoves, perspective);
   const tact = evaluateTacticalAwareness(sanMoves, perspective);
   const end = await calculateEndgameSkill(sanMoves, perspective);
   const devTier = tierFromScore(open);
   const tactTier = tierFromScore(tact);
   const endTier = tierFromScore(end);
-  let elo = 1200;
-  elo += tierBonus(devTier, 200);
-  elo += tierBonus(tactTier, 150);
-  elo += tierBonus(endTier, 100);
-  elo -= blunders * 100;
-  elo -= mistakes * 50;
-  elo = Math.max(800, Math.min(2200, elo));
+
+  const accuracyPercent =
+    movesAnalyzed === 0
+      ? 50
+      : Math.round(
+          ((excellents * 1 + goods * 0.75 + mistakes * 0.35 + blunders * 0) /
+            movesAnalyzed) *
+            100
+        );
+
+  const avgLoss = movesAnalyzed ? totalLoss / movesAnalyzed : 2;
+
+  // Continuous formula so similar-looking games still diverge.
+  let elo = 900 + accuracyPercent * 11;
+  elo += (open - 0.5) * 220;
+  elo += (tact - 0.5) * 180;
+  elo += (end - 0.5) * 120;
+  elo -= avgLoss * 45;
+  elo -= blunders * 85;
+  elo -= mistakes * 32;
+  elo += Math.min(80, movesAnalyzed * 2);
+  if (movesAnalyzed < 8) {
+    // Short games: pull toward mid-range but keep accuracy signal.
+    elo = Math.round(elo * 0.65 + 1200 * 0.35);
+  }
+  elo = Math.max(700, Math.min(2400, Math.round(elo)));
+
   const factors: SkillEstimateFactors = {
     development: devTier,
     tactics: tactTier,
     endgame: endTier,
     blunders,
     mistakes,
+    accuracyPercent,
+    movesAnalyzed,
   };
-  const { strengths, weaknesses } = buildStrengthsWeaknesses(factors);
-  const n = userMoveCount(sanMoves, perspective);
+  const { strengths, weaknesses } = buildStrengthsWeaknesses(
+    factors,
+    accuracyPercent
+  );
   return {
-    estimatedElo: Math.round(elo),
-    confidence: confidenceFromMoves(n),
+    estimatedElo: elo,
+    confidence: confidenceFromMoves(movesAnalyzed),
     factors,
     strengths: strengths.slice(0, 4),
     weaknesses: weaknesses.slice(0, 4),
@@ -953,12 +1028,18 @@ function mergeEstimates(
       : a.factors.endgame === 'average' || b.factors.endgame === 'average'
         ? 'average'
         : 'good';
+  const accuracyPercent = Math.round(
+    (a.factors.accuracyPercent + b.factors.accuracyPercent) / 2
+  );
+  const movesAnalyzed = a.factors.movesAnalyzed + b.factors.movesAnalyzed;
   const factors: SkillEstimateFactors = {
     development: worseDev,
     tactics: worseTac,
     endgame: worseEnd,
     blunders: Math.round((a.factors.blunders + b.factors.blunders) / 2),
     mistakes: Math.round((a.factors.mistakes + b.factors.mistakes) / 2),
+    accuracyPercent,
+    movesAnalyzed,
   };
   const strengths = [...new Set([...a.strengths, ...b.strengths])].slice(0, 4);
   const weaknesses = [...new Set([...a.weaknesses, ...b.weaknesses])].slice(
@@ -992,6 +1073,8 @@ export async function estimateSkill(
         endgame: 'poor',
         blunders: 0,
         mistakes: 0,
+        accuracyPercent: 0,
+        movesAnalyzed: 0,
       },
       strengths: [],
       weaknesses: ['No moves to analyze'],
@@ -1010,6 +1093,8 @@ export async function estimateSkill(
           endgame: 'poor',
           blunders: 0,
           mistakes: 0,
+          accuracyPercent: 0,
+          movesAnalyzed: 0,
         },
         strengths: [],
         weaknesses: ['Invalid move sequence'],

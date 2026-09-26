@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Get Game Review'
+order: 5000
+method: GET
+url: '{{baseUrl}}/api/ai/game-review/:gameId'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: gameId
+    value: '{{gameId}}'

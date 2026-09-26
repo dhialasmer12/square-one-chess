@@ -1,0 +1,19 @@
+@startuml Seq_Login
+skinparam dpi 300
+skinparam shadowing false
+title Sequence diagram --- Log in
+
+actor Player
+participant "Login page\n(Angular)" as UI
+participant "Server" as S
+database "SQLite" as DB
+
+Player -> UI : Opens /login and submits e-mail + password
+UI -> S : POST /api/auth/login
+S -> DB : Find User
+DB --> S : User found
+S --> UI : Session cookie
+UI -> S : GET /api/auth/me
+S --> UI : Profile
+UI --> Player : Redirect to /dashboard
+@enduml

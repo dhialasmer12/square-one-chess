@@ -1,0 +1,10 @@
+$kind: http-request
+name: 'Get Games Analytics'
+order: 2000
+method: GET
+url: '{{baseUrl}}/api/analytics/games'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'

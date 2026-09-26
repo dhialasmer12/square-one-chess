@@ -1,0 +1,20 @@
+@startuml UC_Leaderboard
+skinparam dpi 200
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #000000
+skinparam actorBorderColor #000000
+skinparam rectangleBorderColor #000000
+skinparam arrowColor #000000
+title Use-case diagram --- View the leaderboard
+
+actor "Player" as P
+
+rectangle "Square One Chess" {
+  usecase "View the leaderboard" as S
+  usecase "Log in" as L
+}
+
+P -- S
+S ..> L : <<include>>
+
+@enduml

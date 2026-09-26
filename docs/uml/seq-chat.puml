@@ -1,0 +1,17 @@
+@startuml Seq_Chat
+skinparam dpi 300
+skinparam shadowing false
+title Sequence diagram --- In-game chat
+
+actor Player
+participant "Game chat\n(Angular)" as UI
+participant "Server" as S
+database "SQLite" as DB
+
+Player -> UI : Types a message in the current game
+UI -> S : Send GameMessage (game:{gameId})
+S -> DB : Save ChatMessage
+DB --> S : Message saved
+S --> UI : Message delivered
+UI --> Player : Message shown in the game chat
+@enduml

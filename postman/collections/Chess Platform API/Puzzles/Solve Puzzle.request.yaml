@@ -1,0 +1,23 @@
+$kind: http-request
+name: 'Solve Puzzle'
+order: 6000
+method: POST
+url: '{{baseUrl}}/api/puzzles/:id/solve'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: id
+    value: '{{puzzleId}}'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "move": "Nxf7",
+      "lineIndex": 0
+    }

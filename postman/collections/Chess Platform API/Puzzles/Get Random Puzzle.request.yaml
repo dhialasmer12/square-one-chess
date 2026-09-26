@@ -1,0 +1,15 @@
+$kind: http-request
+name: Get Random Puzzle
+order: 2000
+method: GET
+url: '{{baseUrl}}/api/puzzles/random'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+queryParams:
+  - key: minRating
+    value: '300'
+  - key: maxRating
+    value: '2000'

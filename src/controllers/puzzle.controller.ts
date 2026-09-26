@@ -2,7 +2,6 @@ import type { Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { HttpError } from '../types';
 import * as puzzleService from '../services/puzzle.service';
-import { prisma } from '../models';
 
 function parseIntQ(v: unknown, fallback: number, min: number, max: number): number {
   if (v === undefined || v === null || v === '') {
@@ -25,8 +24,19 @@ export const getRandom = asyncHandler(async (req, res: Response) => {
   const userId = req.user!.sub;
   const maxRating = parseIntQ(req.query.maxRating, 2000, 300, 2000);
   const minRating = parseIntQ(req.query.minRating, 300, 300, maxRating);
-  const puzzle = await puzzleService.getRandomPuzzle(userId, { minRating, maxRating });
+  const themeRaw = Array.isArray(req.query.theme) ? req.query.theme[0] : req.query.theme;
+  const theme = typeof themeRaw === 'string' && themeRaw.trim() ? themeRaw.trim() : undefined;
+  const puzzle = await puzzleService.getRandomPuzzle(userId, {
+    minRating,
+    maxRating,
+    theme,
+  });
   res.json({ puzzle });
+});
+
+export const getThemes = asyncHandler(async (_req, res: Response) => {
+  const themes = await puzzleService.listPuzzleThemes();
+  res.json({ themes });
 });
 
 export const getStats = asyncHandler(async (_req, res: Response) => {
@@ -51,17 +61,9 @@ export const getHint = asyncHandler(async (req, res: Response) => {
   if (!id) {
     throw new HttpError(400, 'puzzle id required');
   }
-  const row = await prisma.puzzle.findUnique({ where: { id } });
-  if (!row) {
-    throw new HttpError(404, 'Puzzle not found');
-  }
-  const moves = puzzleService.parsePuzzleMoves(row.moves);
-  const first = moves[0];
-  if (!first) {
-    throw new HttpError(500, 'Puzzle has no solution');
-  }
-  const fromSquare = puzzleService.fromSquareForSan(row.fen, first);
-  res.json({ fromSquare });
+  const lineIndex = parseIntQ(req.query.lineIndex, 0, 0, 200);
+  const hint = await puzzleService.getHintForPly(id, lineIndex);
+  res.json(hint);
 });
 
 export const getById = asyncHandler(async (req, res: Response) => {
@@ -79,12 +81,13 @@ export const postSolve = asyncHandler(async (req, res: Response) => {
       : typeof req.body?.san === 'string'
         ? req.body.san
         : '';
+  const lineIndex = parseIntQ(req.body?.lineIndex, 0, 0, 200);
   if (!id) {
     throw new HttpError(400, 'puzzle id required');
   }
   if (!move.trim()) {
     throw new HttpError(400, 'move (SAN) required');
   }
-  const result = await puzzleService.checkAndRecordSolve(id, userId, move);
+  const result = await puzzleService.checkAndRecordSolve(id, userId, move, lineIndex);
   res.json(result);
 });

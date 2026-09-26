@@ -19,11 +19,13 @@
         </h1>
       </div>
       <nav class="flex flex-wrap gap-2">
-        <a
-          routerLink="/dashboard"
-          class="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-          >Analytics</a
-        >
+        @if (isAdmin) {
+          <a
+            routerLink="/dashboard"
+            class="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+            >Analytics</a
+          >
+        }
         <a
           routerLink="/leaderboard"
           class="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"

@@ -1,0 +1,71 @@
+@startuml Class_Tournament
+skinparam dpi 200
+hide circle
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
+left to right direction
+title Class diagram --- Tournaments
+
+class TournamentPage {
+  --
+  +create()
+  +join()
+  +forceStart()
+  +loadBracket()
+}
+
+abstract class Tournament {
+  +name: String
+  +type: String
+  +maxPlayers: Int
+  +status: String
+  +currentRound: Int
+  +createdById: String
+}
+class SingleElimination {
+  {static} +ALLOWED_SIZES: 2 | 4 | 8 | 16 | 32
+  --
+  +pairFirstRound()
+  +advanceWinners()
+}
+class RoundRobin {
+  {static} +PLAYER_COUNT: even, 2..16
+  --
+  +buildFullSchedule()
+  +activateNextRound()
+}
+class TournamentRegistration {
+  +joinDate: DateTime
+}
+class TournamentMatch {
+  +round: Int
+  +matchIndex: Int
+  +status: String
+}
+class TournamentMessage {
+  +body: String
+}
+class Game {
+  +id: String
+  +status: String
+}
+class User {
+  +id: String
+  +username: String
+}
+
+Tournament <|-- SingleElimination
+Tournament <|-- RoundRobin
+
+TournamentPage "1" --> "*" Tournament : manages
+User "1" -- "*" Tournament : creates
+Tournament "1" *-- "*" TournamentRegistration : has
+User "1" -- "*" TournamentRegistration : joins
+Tournament "1" *-- "*" TournamentMatch : has
+Tournament "1" *-- "*" TournamentMessage : has
+User "1" -- "*" TournamentMessage : sent
+TournamentMatch "0..1" -- "0..1" Game : played as
+
+@enduml

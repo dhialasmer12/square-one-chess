@@ -1,0 +1,58 @@
+@startuml Class_Match
+skinparam dpi 200
+hide circle
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
+left to right direction
+title Class diagram --- Matchmaking, history and replay
+
+class LobbyPage {
+  --
+  +joinQueue()
+  +leaveQueue()
+}
+class HistoryPage {
+  --
+  +listGames()
+  +openReplay()
+}
+
+abstract class Game {
+  +id: String
+  +fen: String
+  +pgn: String
+  +status: String
+  +timeControl: String
+}
+class OnlineGame {
+}
+class BotGame {
+  +botDifficulty: String
+}
+class QueueEntry {
+  +userId: String
+  +elo: Int
+  +joinedAt: DateTime
+}
+class Move {
+  +fromSquare: String
+  +toSquare: String
+  +fen: String
+}
+class User {
+  +id: String
+  +elo: Int
+}
+
+Game <|-- OnlineGame
+Game <|-- BotGame
+
+LobbyPage "1" --> "*" QueueEntry : joins
+User "1" *-- "*" QueueEntry : queued as
+HistoryPage "1" --> "*" Game : lists
+Game "1" *-- "*" Move : contains
+User "1" -- "*" Game : plays
+
+@enduml

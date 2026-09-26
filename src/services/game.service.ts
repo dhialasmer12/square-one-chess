@@ -260,52 +260,94 @@ export async function makeMove(
   const response = toGameResponse(updated);
   getSocketServer()?.to(`game:${gameId}`).emit('game:state', response);
 
-  // If this is a bot game (open-seat) and the human just played, auto-play bot reply.
+  // Bot reply is async so the human move returns immediately (no long “refresh” wait).
   const isBotGame =
     updated.whitePlayerId === OPEN_SEAT_USER_ID ||
     updated.blackPlayerId === OPEN_SEAT_USER_ID;
   const humanJustPlayed = actingUserId !== OPEN_SEAT_USER_ID;
   if (!outcome.finished && isBotGame && humanJustPlayed) {
-    try {
-      const chessNow = chessFromFen(updated.fen);
-      const gameRow = await prisma.game.findUnique({
-        where: { id: gameId },
-        select: { botDifficulty: true },
-      });
-      const difficulty = gameRow?.botDifficulty ?? 'medium';
-      // Current implementation: use stockfish/heuristic suggestions.
-      // Difficulty control:
-      // - hard: always best (request 1 suggestion)
-      // - medium: best (request 3 suggestions)
-      // - easy: sometimes 2nd best (request 3 suggestions)
-      const suggestions = await predictMoves(
-        chessNow.fen(),
-        difficulty === 'hard' ? 1 : 3
-      );
-      const best = suggestions[0];
-      const pick =
-        difficulty === 'easy' && suggestions.length > 1
-          ? suggestions[1]!
-          : best;
-      if (pick) {
-        const prom = pickPromotionForFromTo(chessNow, pick.from, pick.to);
-        // Apply bot move as OPEN_SEAT player.
-        const botResult = await makeMove(
-          gameId,
-          pick.from,
-          pick.to,
-          prom,
-          OPEN_SEAT_USER_ID
-        );
-        return botResult;
-      }
-    } catch (e) {
-      console.error('[bot] move generation failed', e);
-      // Fall back to returning human move result.
-    }
+    void playBotReplyAsync(gameId).catch((e) => {
+      console.error('[bot] async reply failed', e);
+    });
   }
 
   return response;
+}
+
+async function playBotReplyAsync(gameId: string): Promise<void> {
+  const game = await prisma.game.findUnique({ where: { id: gameId } });
+  if (!game || game.status === 'finished') {
+    return;
+  }
+  const chessNow = chessFromFen(game.fen);
+  const difficulty = game.botDifficulty ?? 'medium';
+
+  let from = '';
+  let to = '';
+  let promotion: 'q' | 'r' | 'b' | 'n' | undefined;
+
+  try {
+    const suggestions = await predictMoves(
+      chessNow.fen(),
+      difficulty === 'hard' ? 1 : 3
+    );
+    const best = suggestions[0];
+    const pick =
+      difficulty === 'easy' && suggestions.length > 1
+        ? suggestions[1]!
+        : best;
+    if (pick) {
+      from = pick.from;
+      to = pick.to;
+      promotion = pickPromotionForFromTo(chessNow, pick.from, pick.to);
+    }
+  } catch (e) {
+    console.error('[bot] move generation failed', e);
+  }
+
+  if (!from || !to) {
+    const legal = chessNow.moves({ verbose: true });
+    const fallback = legal[Math.floor(Math.random() * legal.length)];
+    if (!fallback) {
+      return;
+    }
+    from = fallback.from;
+    to = fallback.to;
+    promotion = fallback.promotion as 'q' | 'r' | 'b' | 'n' | undefined;
+  }
+
+  const botResult = await makeMove(
+    gameId,
+    from,
+    to,
+    promotion ?? 'q',
+    OPEN_SEAT_USER_ID
+  );
+
+  const entry = activeGames.get(gameId);
+  if (entry) {
+    try {
+      entry.gameInstance.load(botResult.fen);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const io = getSocketServer();
+  io?.to(`game:${gameId}`).emit('game:moved', {
+    gameId,
+    from,
+    to,
+    promotion: promotion ?? 'q',
+    game: botResult,
+  });
+  if (botResult.status === 'finished') {
+    io?.to(`game:${gameId}`).emit('game:end', {
+      winner: botResult.winner,
+      game: botResult,
+    });
+    activeGames.delete(gameId);
+  }
 }
 
 function boardToResponse(

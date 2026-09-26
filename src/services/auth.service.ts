@@ -6,10 +6,8 @@ import type { RegisterBody, LoginBody, AuthTokens, UpdateProfileBody } from '../
 import { assertValidUsername, isValidEmail } from '../utils/validation';
 import { generateOneTimeToken, sha256Hex } from '../utils/tokens';
 import { sendPasswordResetEmail, sendVerificationEmail } from './email.service';
-import {
-  isEmailVerificationRequired,
-  shouldAutoVerifyEmailInDev,
-} from '../utils/auth-config';
+import { isEmailVerificationRequired, shouldAutoVerifyEmailInDev } from '../utils/auth-config';
+import { isAdminUser } from '../utils/admin';
 
 function resolveLoginIdentifier(body: LoginBody): string {
   return (body.identifier ?? body.email ?? body.username ?? '').trim();
@@ -178,9 +176,13 @@ export async function getUserProfile(userId: string) {
   if (!user) {
     throw new HttpError(404, 'User not found');
   }
+  if (isEmailVerificationRequired() && !user.emailVerified) {
+    throw new HttpError(403, 'Email not verified');
+  }
   return {
     ...user,
     displayName: user.username,
+    isAdmin: isAdminUser(user.id, user.email),
   };
 }
 

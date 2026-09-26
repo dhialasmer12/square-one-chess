@@ -1,0 +1,22 @@
+@startuml Seq_Puzzle
+skinparam dpi 300
+skinparam shadowing false
+title Sequence diagram --- Solve a puzzle
+
+actor Player
+participant "Puzzle page\n(Angular)" as UI
+participant "Server" as S
+database "SQLite" as DB
+
+Player -> UI : Opens /puzzles
+UI -> S : GET /api/puzzles/daily
+S -> DB : Load Puzzle
+DB --> S : Position and solution
+S --> UI : Puzzle (FEN, theme)
+Player -> UI : Plays the solution on the board
+UI -> S : POST /api/puzzles/:id/solve
+S -> DB : Record solve
+DB --> S : Stats updated
+S --> UI : Puzzle solved
+UI --> Player : Success
+@enduml

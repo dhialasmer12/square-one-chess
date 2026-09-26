@@ -1,0 +1,21 @@
+$kind: http-request
+name: Create Tournament
+order: 1000
+method: POST
+url: '{{baseUrl}}/api/tournaments/create'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Weekend Blitz",
+      "type": "single_elimination",
+      "maxPlayers": 8
+    }

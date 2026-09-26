@@ -1,0 +1,10 @@
+$kind: http-request
+name: Verify Email
+order: 8000
+method: GET
+url: '{{baseUrl}}/api/auth/verify-email'
+auth:
+  type: noauth
+queryParams:
+  - key: token
+    value: '{{verificationToken}}'

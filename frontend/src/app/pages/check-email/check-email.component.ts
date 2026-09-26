@@ -1,11 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {
   FormBuilder,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthShellComponent } from '../../components/auth-shell/auth-shell.component';
 import { AuthService } from '../../services/auth.service';
 
@@ -77,9 +77,10 @@ import { AuthService } from '../../services/auth.service';
     </app-auth-shell>
   `,
 })
-export class CheckEmailComponent {
+export class CheckEmailComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
 
   loading = false;
   infoMsg = '';
@@ -88,6 +89,13 @@ export class CheckEmailComponent {
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
   });
+
+  ngOnInit(): void {
+    const email = this.route.snapshot.queryParamMap.get('email');
+    if (email) {
+      this.form.controls.email.setValue(email);
+    }
+  }
 
   resend(): void {
     if (this.form.invalid) {

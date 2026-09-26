@@ -62,6 +62,8 @@ export class GamePageComponent implements OnInit, OnDestroy {
 
   connecting = true;
   loadError = '';
+  /** True while a player move is being confirmed (no full-board spinner). */
+  moveInFlight = false;
   boardLoading = false;
   resignBusy = false;
   drawBusy = false;
@@ -143,6 +145,7 @@ export class GamePageComponent implements OnInit, OnDestroy {
       this.gameOver ||
       !this.myTurn ||
       this.connecting ||
+      this.moveInFlight ||
       this.boardLoading
     );
   }
@@ -249,7 +252,8 @@ export class GamePageComponent implements OnInit, OnDestroy {
       return;
     }
     const fenBefore = this.session.game.fen;
-    this.boardLoading = true;
+    // Soft lock only — no full-board spinner (that looked like a page refresh vs AI).
+    this.moveInFlight = true;
     try {
       const updated = await this.gamePlay.makeMove(
         this.gameId,
@@ -271,7 +275,7 @@ export class GamePageComponent implements OnInit, OnDestroy {
     } catch {
       this.chessBoard?.setPosition(fenBefore);
     } finally {
-      this.boardLoading = false;
+      this.moveInFlight = false;
     }
   }
 
@@ -451,10 +455,7 @@ export class GamePageComponent implements OnInit, OnDestroy {
       if (st.isGameOver) {
         this.gameOver = true;
       }
-      // Auto-hints for bot games: refresh suggestions every time it becomes our turn.
-      if (this.vsBot && this.myTurn && !this.gameOver && !this.replayMode) {
-        void this.onSuggestBestMove();
-      }
+      // Suggestions are on-demand only (auto-analyze after every bot reply felt like a refresh).
     } catch {
       /* non-fatal */
     }

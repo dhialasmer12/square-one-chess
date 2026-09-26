@@ -1,0 +1,20 @@
+$kind: http-request
+name: Get Lesson Puzzles
+order: 4000
+method: POST
+url: '{{baseUrl}}/api/ai/lesson-puzzles'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "lessonId": "{{lessonId}}",
+      "limit": 8
+    }

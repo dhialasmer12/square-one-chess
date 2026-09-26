@@ -1,0 +1,20 @@
+@startuml UC_Profile
+skinparam dpi 200
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #000000
+skinparam actorBorderColor #000000
+skinparam rectangleBorderColor #000000
+skinparam arrowColor #000000
+title Use-case diagram --- Manage profile
+
+actor "Player" as P
+
+rectangle "Square One Chess" {
+  usecase "Manage profile" as M
+  usecase "Log in" as L
+}
+
+P -- M
+M ..> L : <<include>>
+
+@enduml

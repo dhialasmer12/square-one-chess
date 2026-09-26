@@ -72,21 +72,23 @@ export class ChatSidebarComponent implements OnInit, OnDestroy {
   }
 
   private refreshAuth(): void {
-    const next = this.auth.isAuthenticated();
-    if (next && this.authed && this.chatSubs) {
+    // Already bootstrapped for this session — avoid spamming /me on every nav.
+    if (this.authed && this.chatSubs) {
       return;
     }
-    if (!next && !this.authed && !this.chatSubs) {
-      return;
-    }
-    this.authed = next;
-    if (!this.authed) {
-      this.chatSubs?.unsubscribe();
-      this.chatSubs = undefined;
-      this.clearSocialUiState();
-      return;
-    }
-    void this.bootstrapAuthedSession();
+    this.auth.hasSession().subscribe((next) => {
+      if (next && this.authed && this.chatSubs) {
+        return;
+      }
+      this.authed = next;
+      if (!this.authed) {
+        this.chatSubs?.unsubscribe();
+        this.chatSubs = undefined;
+        this.clearSocialUiState();
+        return;
+      }
+      void this.bootstrapAuthedSession();
+    });
   }
 
   private clearSocialUiState(): void {

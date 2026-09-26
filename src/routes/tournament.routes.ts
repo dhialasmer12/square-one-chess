@@ -9,6 +9,7 @@ router.use(verifyToken);
 router.post('/create', tournamentController.createTournament);
 router.get('/active', tournamentController.listActive);
 router.post('/:tournamentId/join', tournamentController.joinTournament);
+router.post('/:tournamentId/start', tournamentController.forceStartTournament);
 router.get('/:tournamentId/bracket', tournamentController.getBracket);
 router.get('/:tournamentId/matches', tournamentController.getMatches);
 router.get('/:tournamentId/chat', tournamentController.getChat);

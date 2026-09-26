@@ -34,7 +34,7 @@ import { AuthService } from '../../services/auth.service';
 })
 export class DashboardPageComponent implements OnInit {
   private readonly analytics = inject(AnalyticsDashboardService);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
 
   mode: 'admin' | 'player' | 'loading' | 'error' = 'loading';
   platform: PlatformAnalyticsDto | null = null;
@@ -43,6 +43,22 @@ export class DashboardPageComponent implements OnInit {
   loadError = '';
 
   ngOnInit(): void {
+    this.auth.me().subscribe({
+      next: (u) => {
+        if (u.isAdmin) {
+          this.loadPlatform();
+        } else {
+          this.loadPlayer(u.id);
+        }
+      },
+      error: () => {
+        this.mode = 'error';
+        this.loadError = 'Not signed in.';
+      },
+    });
+  }
+
+  private loadPlatform(): void {
     this.analytics.getPlatform(30).subscribe({
       next: (p) => {
         this.platform = p;
@@ -50,38 +66,37 @@ export class DashboardPageComponent implements OnInit {
       },
       error: (e: HttpErrorResponse) => {
         if (e.status === 403) {
-          this.auth.me().subscribe({
-            next: (u) => {
-              this.analytics.getUser(u.id).subscribe({
-                next: (pl) => {
-                  this.player = pl;
-                  this.playerKpis = {
-                    elo: pl.elo,
-                    eloBullet: pl.eloBullet,
-                    eloBlitz: pl.eloBlitz,
-                    eloRapid: pl.eloRapid,
-                    gamesPlayed: pl.gamesPlayed,
-                    gamesWon: pl.gamesWon,
-                    gamesLost: pl.gamesLost,
-                    username: pl.username,
-                  };
-                  this.mode = 'player';
-                },
-                error: () => {
-                  this.mode = 'error';
-                  this.loadError = 'Could not load your analytics.';
-                },
-              });
-            },
-            error: () => {
-              this.mode = 'error';
-              this.loadError = 'Not signed in.';
-            },
-          });
-        } else {
-          this.mode = 'error';
-          this.loadError = 'Could not load analytics.';
+          const id = this.auth.currentUser()?.id;
+          if (id) {
+            this.loadPlayer(id);
+            return;
+          }
         }
+        this.mode = 'error';
+        this.loadError = 'Could not load analytics.';
+      },
+    });
+  }
+
+  private loadPlayer(userId: string): void {
+    this.analytics.getUser(userId).subscribe({
+      next: (pl) => {
+        this.player = pl;
+        this.playerKpis = {
+          elo: pl.elo,
+          eloBullet: pl.eloBullet,
+          eloBlitz: pl.eloBlitz,
+          eloRapid: pl.eloRapid,
+          gamesPlayed: pl.gamesPlayed,
+          gamesWon: pl.gamesWon,
+          gamesLost: pl.gamesLost,
+          username: pl.username,
+        };
+        this.mode = 'player';
+      },
+      error: () => {
+        this.mode = 'error';
+        this.loadError = 'Could not load your stats.';
       },
     });
   }

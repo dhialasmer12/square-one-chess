@@ -1,0 +1,42 @@
+@startuml Class_Admin
+skinparam dpi 200
+hide circle
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
+left to right direction
+title Class diagram --- Administration
+
+class DashboardPage {
+  --
+  +loadPlatformAnalytics()
+}
+class AnalyticsService {
+  --
+  +getPlatformAnalytics()
+}
+class User {
+  +id: String
+  +username: String
+  +elo: Int
+  +gamesPlayed: Int
+}
+class Administrator {
+  --
+  +viewPlatformAnalytics()
+}
+class Game {
+  +id: String
+  +status: String
+  +startedAt: DateTime
+}
+
+User <|-- Administrator
+
+DashboardPage "1" --> "1" AnalyticsService : uses
+AnalyticsService "1" --> "*" Administrator : restricted to
+Administrator "1" -- "*" User : inspects
+Administrator "1" -- "*" Game : inspects
+
+@enduml

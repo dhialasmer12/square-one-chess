@@ -1,0 +1,21 @@
+@startuml UC_Register
+skinparam dpi 200
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #000000
+skinparam actorBorderColor #000000
+skinparam rectangleBorderColor #000000
+skinparam arrowColor #000000
+title Use-case diagram --- Register
+
+actor "Visitor" as Guest
+
+rectangle "Square One Chess" {
+  usecase "Register" as UC_Register
+  usecase "Verify e-mail" as UC_Mail
+}
+
+Guest -- UC_Register
+Guest -- UC_Mail
+UC_Mail ..> UC_Register : <<extend>>
+
+@enduml

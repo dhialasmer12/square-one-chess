@@ -1,0 +1,29 @@
+@startuml Class_Profile
+skinparam dpi 200
+hide circle
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
+left to right direction
+title Class diagram --- Manage profile
+
+class ProfilePage {
+  --
+  +loadProfile()
+  +updateProfile()
+}
+class User {
+  +id: String
+  +username: String
+  +email: String
+  +elo: Int
+  +gamesPlayed: Int
+  +gamesWon: Int
+  --
+  +updateUsername()
+}
+
+ProfilePage "1" --> "1" User : displays
+
+@enduml

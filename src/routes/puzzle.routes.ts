@@ -9,6 +9,7 @@ router.use(verifyToken);
 router.get('/daily', puzzleController.getDaily);
 router.get('/random', puzzleController.getRandom);
 router.get('/stats', puzzleController.getStats);
+router.get('/themes', puzzleController.getThemes);
 router.get('/theme/:theme', puzzleController.getByTheme);
 router.post('/:id/solve', puzzleController.postSolve);
 router.get('/:id/hint', puzzleController.getHint);

@@ -1,0 +1,13 @@
+$kind: http-request
+name: 'Get Game Moves'
+order: 8000
+method: GET
+url: '{{baseUrl}}/api/games/:gameId/moves'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+pathVariables:
+  - key: gameId
+    value: '{{gameId}}'

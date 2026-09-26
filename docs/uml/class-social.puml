@@ -1,0 +1,52 @@
+@startuml Class_Social
+skinparam dpi 200
+hide circle
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
+left to right direction
+title Class diagram --- Communicate with players
+
+class GameChat {
+  +gameId: String
+  --
+  +joinGameRoom()
+  +send()
+}
+
+class User {
+  +id: String
+  +username: String
+}
+class Friend {
+  +status: String
+}
+
+abstract class ChatMessage {
+  +roomId: String
+  +content: String
+  +type: String
+}
+class GameMessage {
+  {static} +TYPE: game
+  {static} +ROOM: game:{gameId}
+  --
+  +joinGameRoom()
+  +sendGame()
+}
+
+class Game {
+  +id: String
+  +status: String
+}
+
+ChatMessage <|-- GameMessage
+
+GameChat "1" --> "*" GameMessage : shows
+User "1" -- "*" Friend : sent
+User "1" -- "*" Friend : received
+User "1" -- "*" GameMessage : sent
+Game "1" *-- "*" GameMessage : room
+
+@enduml

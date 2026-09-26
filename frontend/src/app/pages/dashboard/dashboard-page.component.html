@@ -7,11 +7,15 @@
     >
       <div>
         <p class="font-display text-lg font-semibold text-board-light">
-          Analytics
+          @if (mode === 'admin') {
+            Analytics
+          } @else {
+            Dashboard
+          }
         </p>
         <p class="text-xs text-zinc-500">
           @if (mode === 'admin') {
-            Platform dashboard
+            Platform dashboard (admin)
           } @else if (mode === 'player') {
             Your stats
           }
@@ -87,8 +91,8 @@
         />
       </div>
       <p class="text-sm text-zinc-500">
-        Full platform metrics (growth, ELO histogram, activity heatmap) are
-        available to administrators.
+        Platform analytics (growth, ELO histogram, activity heatmap) are
+        reserved for administrators.
       </p>
     }
   </main>

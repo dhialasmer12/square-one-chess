@@ -1,0 +1,26 @@
+@startuml UC_Match_History
+skinparam dpi 200
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #000000
+skinparam actorBorderColor #000000
+skinparam rectangleBorderColor #000000
+skinparam arrowColor #000000
+title Use-case diagram --- Matchmaking, history and replay
+
+actor "Player" as P
+
+rectangle "Square One Chess" {
+  usecase "Join matchmaking" as Q
+  usecase "View and replay games" as H
+  usecase "Review a finished game" as R
+  usecase "Log in" as L
+}
+
+P -- Q
+P -- H
+Q ..> L : <<include>>
+H ..> L : <<include>>
+R ..> H : <<extend>>
+R ..> L : <<include>>
+
+@enduml

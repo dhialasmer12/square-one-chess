@@ -1,0 +1,10 @@
+$kind: http-request
+name: Get Puzzle Stats
+order: 3000
+method: GET
+url: '{{baseUrl}}/api/puzzles/stats'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'

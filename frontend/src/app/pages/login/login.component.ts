@@ -123,12 +123,18 @@ export class LoginComponent {
     this.loading = true;
     this.errorMsg = '';
     this.auth.login(this.form.getRawValue()).subscribe({
-      next: () => void this.router.navigate(['/dashboard']),
+      next: () => {
+        this.loading = false;
+        void this.router.navigate(['/dashboard']);
+      },
       error: (err: { error?: { error?: string } }) => {
         this.loading = false;
         const msg = err.error?.error ?? 'Unable to sign in.';
         if (msg.toLowerCase().includes('not verified')) {
-          void this.router.navigate(['/check-email']);
+          const email = this.form.controls.email.value;
+          void this.router.navigate(['/check-email'], {
+            queryParams: { email },
+          });
           return;
         }
         this.errorMsg = msg;

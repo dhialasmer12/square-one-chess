@@ -1,0 +1,20 @@
+$kind: http-request
+name: Recommend Lessons
+order: 3000
+method: POST
+url: '{{baseUrl}}/api/ai/recommend-lessons'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "userId": "{{userId}}",
+      "numRecommendations": 5
+    }

@@ -1,0 +1,30 @@
+$kind: collection
+name: Chess Platform API
+description: API collection for the Chess Platform backend (Express/Node.js). Base URL defaults to http://localhost:3000.
+variables:
+  - key: baseUrl
+    value: 'http://localhost:3000'
+  - key: authToken
+    value: ''
+  - key: userId
+    value: ''
+  - key: gameId
+    value: ''
+  - key: opponentId
+    value: ''
+  - key: tournamentId
+    value: ''
+  - key: requestId
+    value: ''
+  - key: friendId
+    value: ''
+  - key: puzzleId
+    value: ''
+  - key: lessonId
+    value: ''
+  - key: roomId
+    value: ''
+  - key: verificationToken
+    value: ''
+  - key: resetToken
+    value: ''

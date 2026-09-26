@@ -7,6 +7,7 @@ export interface TournamentListItem {
   status: string;
   currentRound: number;
   createdAt: string;
+  createdById: string;
 }
 
 export interface BracketMatchDto {

@@ -1,0 +1,13 @@
+$kind: http-request
+name: Get Chat History
+order: 1000
+method: GET
+url: '{{baseUrl}}/api/chat/history'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+queryParams:
+  - key: roomId
+    value: '{{roomId}}'
