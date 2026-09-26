@@ -113,10 +113,8 @@ export class ChessBoardComponent
       return;
     }
 
-    if (changes['disabled']) {
-      this.refreshBoardInstance();
-      return;
-    }
+    // `disabled` is enforced inside onDragStart / onDrop, so the board
+    // instance is kept as is (rebuilding it on every turn looked like a refresh).
 
     if (this.boardApi) {
       if (changes['fen']) {
@@ -247,7 +245,8 @@ export class ChessBoardComponent
     this.boardApi = Cb(el, {
       position: this.safeFen(),
       orientation: this.orientation,
-      draggable: !this.disabled,
+      // Always draggable; `disabled` is checked in the callbacks below.
+      draggable: true,
       onDragStart: (details: { piece?: string; square?: string }) => {
         if (self.disabled) {
           return false;
@@ -381,11 +380,6 @@ export class ChessBoardComponent
       seen.add(sq);
       this.highlightSquare(sq, this.legalMovesPointColor);
     }
-  }
-
-  private refreshBoardInstance(): void {
-    this.destroyBoard();
-    this.initBoard();
   }
 
   private destroyBoard(): void {

@@ -8,7 +8,13 @@ export class SocketService {
 
   /** Opens (or returns) a Socket.io connection to WS_URL with optional JWT in handshake. */
   connect(): Socket {
-    if (this.socket?.connected) {
+    // Reuse the existing instance even while it is still (re)connecting;
+    // socket.io handles reconnection itself. Creating a second socket would
+    // send moves on a connection that never joined the game room.
+    if (this.socket) {
+      if (!this.socket.connected && !this.socket.active) {
+        this.socket.connect();
+      }
       return this.socket;
     }
     this.socket = io(environment.WS_URL, {
